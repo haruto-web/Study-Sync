@@ -19,23 +19,61 @@ public class LoginActivity extends AppCompatActivity {
         binding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        binding.btnLogin.setOnClickListener(v -> {
-            String email = binding.etEmail.getText().toString().trim();
-            String password = binding.etPassword.getText().toString().trim();
-            if (email.isEmpty() || password.isEmpty()) {
-                Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            auth.signInWithEmailAndPassword(email, password)
-                .addOnSuccessListener(r -> {
-                    startActivity(new Intent(this, MainActivity.class));
-                    finish();
-                })
-                .addOnFailureListener(e ->
-                    Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show());
-        });
+        // Check if user is already logged in
+        if (auth.getCurrentUser() != null) {
+            startActivity(new Intent(this, MainActivity.class));
+            finish();
+        }
 
+        binding.btnLogin.setOnClickListener(v -> loginUser());
         binding.tvRegister.setOnClickListener(v ->
             startActivity(new Intent(this, RegisterActivity.class)));
+        binding.tvForgotPassword.setOnClickListener(v -> resetPassword());
+    }
+
+    private void loginUser() {
+        String email = binding.etEmail.getText().toString().trim();
+        String password = binding.etPassword.getText().toString().trim();
+
+        // Validation
+        if (email.isEmpty()) {
+            binding.etEmail.setError("Email is required");
+            return;
+        }
+        if (password.isEmpty()) {
+            binding.etPassword.setError("Password is required");
+            return;
+        }
+
+        // Sign in
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnSuccessListener(r -> {
+                Toast.makeText(this, "Sign in successful!", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, MainActivity.class));
+                finish();
+            })
+            .addOnFailureListener(e -> {
+                String errorMsg = e.getMessage();
+                if (errorMsg != null && errorMsg.contains("user")) {
+                    binding.etEmail.setError("User not found");
+                } else if (errorMsg != null && errorMsg.contains("password")) {
+                    binding.etPassword.setError("Incorrect password");
+                } else {
+                    Toast.makeText(this, "Sign in failed: " + errorMsg, Toast.LENGTH_SHORT).show();
+                }
+            });
+    }
+
+    private void resetPassword() {
+        String email = binding.etEmail.getText().toString().trim();
+        if (email.isEmpty()) {
+            Toast.makeText(this, "Enter your email to reset password", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        auth.sendPasswordResetEmail(email)
+            .addOnSuccessListener(task ->
+                Toast.makeText(this, "Password reset email sent!", Toast.LENGTH_SHORT).show())
+            .addOnFailureListener(e ->
+                Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 }

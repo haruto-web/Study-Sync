@@ -1,0 +1,14 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Base.Theme.StudySyncproject" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+    </style>
+
+    <style name="Theme.StudySyncproject" parent="Base.Theme.StudySyncproject" />
+
+    <style name="Theme.StudySyncproject.Splash" parent="Theme.StudySyncproject">
+        <item name="android:windowBackground">@color/splash_bg</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+    </style>
+</resources>

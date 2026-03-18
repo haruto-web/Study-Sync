@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/homeFragment">
+
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.example.studysync_project.ui.home.HomeFragment"
+        android:label="Home" />
+
+    <fragment
+        android:id="@+id/tasksFragment"
+        android:name="com.example.studysync_project.ui.tasks.TasksFragment"
+        android:label="Tasks" />
+
+    <fragment
+        android:id="@+id/timerFragment"
+        android:name="com.example.studysync_project.ui.timer.TimerFragment"
+        android:label="Timer" />
+
+    <fragment
+        android:id="@+id/quizFragment"
+        android:name="com.example.studysync_project.ui.quiz.QuizFragment"
+        android:label="Quiz" />
+
+    <fragment
+        android:id="@+id/arFragment"
+        android:name="com.example.studysync_project.ui.ar.ArFragment"
+        android:label="AR Flashcards" />
+
+</navigation>

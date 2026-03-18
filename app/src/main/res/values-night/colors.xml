@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Neutrals -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="background">#FFFAF7</color>
+    <color name="surface">#FFFAF7</color>
+    <color name="surface_variant">#F3EDF7</color>
+    <color name="outline">#9B8C99</color>
+    <color name="text_primary">#1F1A24</color>
+    <color name="text_secondary">#49454E</color>
+    
+    <!-- Primary Colors (Lighter shade) -->
+    <color name="primary">#7D5FB5</color>
+    <color name="primary_dark">#6750A4</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="primary_container">#F3EAFF</color>
+    <color name="on_primary_container">#2D0062</color>
+    
+    <!-- Secondary Colors -->
+    <color name="secondary">#7D7783</color>
+    <color name="on_secondary">#FFFFFF</color>
+    <color name="secondary_container">#F1EDF8</color>
+    <color name="on_secondary_container">#28252D</color>
+    
+    <!-- Tertiary Colors -->
+    <color name="tertiary">#9D6A7F</color>
+    <color name="on_tertiary">#FFFFFF</color>
+    <color name="tertiary_container">#FFE8F5</color>
+    <color name="on_tertiary_container">#3D1C33</color>
+    
+    <!-- Error Colors -->
+    <color name="error">#CA3C3C</color>
+    <color name="on_error">#FFFFFF</color>
+    <color name="error_container">#FFDAD6</color>
+    <color name="on_error_container">#5C1F1A</color>
+    
+    <!-- Success/Confirmation Colors -->
+    <color name="success">#4CAF50</color>
+    <color name="success_light">#E8F5E9</color>
+    
+    <!-- Splash Screen -->
+    <color name="splash_bg">#7D5FB5</color>
+</resources>

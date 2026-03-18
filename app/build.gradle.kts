@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "com.example.studysync_project"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.studysync_project"
-        minSdk = 26
-        targetSdk = 35
+        minSdk = 31
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -77,7 +77,7 @@ dependencies {
     implementation(libs.arcore)
 
     // PDF Viewer
-    implementation(libs.pdf.viewer)
+    implementation(libs.androidx.pdf)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

@@ -4,11 +4,10 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import com.example.studysync_project.data.model.UserProfile;
 import com.example.studysync_project.databinding.ActivityRegisterBinding;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
-import java.util.HashMap;
-import java.util.Map;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -22,29 +21,68 @@ public class RegisterActivity extends AppCompatActivity {
         binding = ActivityRegisterBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        binding.btnRegister.setOnClickListener(v -> {
-            String name = binding.etName.getText().toString().trim();
-            String email = binding.etEmail.getText().toString().trim();
-            String password = binding.etPassword.getText().toString().trim();
-            if (name.isEmpty() || email.isEmpty() || password.isEmpty()) {
-                Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            auth.createUserWithEmailAndPassword(email, password)
-                .addOnSuccessListener(r -> {
-                    String uid = r.getUser().getUid();
-                    Map<String, Object> user = new HashMap<>();
-                    user.put("name", name);
-                    user.put("email", email);
-                    db.collection("users").document(uid).set(user);
-                    Toast.makeText(this, "Account created!", Toast.LENGTH_SHORT).show();
-                    startActivity(new Intent(this, LoginActivity.class));
-                    finish();
-                })
-                .addOnFailureListener(e ->
-                    Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show());
-        });
+        binding.btnBack.setOnClickListener(v -> finish());
 
+        binding.btnRegister.setOnClickListener(v -> registerUser());
         binding.tvLogin.setOnClickListener(v -> finish());
+    }
+
+    private void registerUser() {
+        String name = binding.etName.getText().toString().trim();
+        String email = binding.etEmail.getText().toString().trim();
+        String password = binding.etPassword.getText().toString().trim();
+        String confirmPassword = binding.etConfirmPassword.getText().toString().trim();
+        boolean termsAccepted = binding.cbTerms.isChecked();
+
+        // Validation
+        if (name.isEmpty()) {
+            binding.etName.setError("Full name is required");
+            return;
+        }
+        if (email.isEmpty()) {
+            binding.etEmail.setError("Email is required");
+            return;
+        }
+        if (password.isEmpty()) {
+            binding.etPassword.setError("Password is required");
+            return;
+        }
+        if (password.length() < 6) {
+            binding.etPassword.setError("Password must be at least 6 characters");
+            return;
+        }
+        if (!password.equals(confirmPassword)) {
+            binding.etConfirmPassword.setError("Passwords do not match");
+            return;
+        }
+        if (!termsAccepted) {
+            Toast.makeText(this, "Please accept the Terms & Conditions", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Create user account
+        auth.createUserWithEmailAndPassword(email, password)
+            .addOnSuccessListener(r -> {
+                String uid = r.getUser().getUid();
+                // Create profile using our UserProfile model
+                UserProfile userProfile = new UserProfile(uid, email, name);
+                
+                db.collection("users").document(uid).set(userProfile)
+                    .addOnSuccessListener(task -> {
+                        Toast.makeText(this, "Account created successfully!", Toast.LENGTH_SHORT).show();
+                        startActivity(new Intent(this, LoginActivity.class));
+                        finish();
+                    })
+                    .addOnFailureListener(e ->
+                        Toast.makeText(this, "Error saving profile: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+            })
+            .addOnFailureListener(e -> {
+                String errorMsg = e.getMessage();
+                if (errorMsg != null && errorMsg.contains("already in use")) {
+                    binding.etEmail.setError("Email is already registered");
+                } else {
+                    Toast.makeText(this, "Registration failed: " + errorMsg, Toast.LENGTH_SHORT).show();
+                }
+            });
     }
 }

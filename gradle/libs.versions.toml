@@ -18,7 +18,7 @@ gson = "2.11.0"
 glide = "4.16.0"
 mpandroidchart = "v3.1.0"
 arcore = "1.47.0"
-pdfViewer = "3.2.0-beta.3"
+androidxPdf = "1.0.0-alpha15"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -46,7 +46,7 @@ glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "gl
 glide-compiler = { group = "com.github.bumptech.glide", name = "compiler", version.ref = "glide" }
 mpandroidchart = { group = "com.github.PhilJay", name = "MPAndroidChart", version.ref = "mpandroidchart" }
 arcore = { group = "com.google.ar", name = "core", version.ref = "arcore" }
-pdf-viewer = { group = "com.github.barteksc", name = "android-pdf-viewer", version.ref = "pdfViewer" }
+androidx-pdf = { group = "androidx.pdf", name = "pdf-viewer", version.ref = "androidxPdf" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

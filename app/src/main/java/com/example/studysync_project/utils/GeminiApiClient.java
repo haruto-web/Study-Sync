@@ -15,7 +15,7 @@ import retrofit2.http.Query;
 public class GeminiApiClient {
 
     private static final String BASE_URL = "https://generativelanguage.googleapis.com/";
-    private static final String API_KEY = "AIzaSyDBbxB5cc5kZf6E2x6iy8XYvoOynxf_3x4";
+    private static final String API_KEY = com.example.studysync_project.BuildConfig.GEMINI_API_KEY;
     private static GeminiService service;
 
     private static GeminiService getService() {

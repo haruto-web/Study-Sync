@@ -3,10 +3,13 @@ package com.example.studysync_project.ui.auth;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.example.studysync_project.MainActivity;
 import com.example.studysync_project.databinding.ActivityLoginBinding;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -19,8 +22,9 @@ public class LoginActivity extends AppCompatActivity {
         binding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // Check if user is already logged in
-        if (auth.getCurrentUser() != null) {
+        // Check if user is already logged in and verified
+        FirebaseUser current = auth.getCurrentUser();
+        if (current != null && current.isEmailVerified()) {
             startActivity(new Intent(this, MainActivity.class));
             finish();
         }
@@ -48,6 +52,11 @@ public class LoginActivity extends AppCompatActivity {
         // Sign in
         auth.signInWithEmailAndPassword(email, password)
             .addOnSuccessListener(r -> {
+                if (!r.getUser().isEmailVerified()) {
+                    Toast.makeText(this, "Please verify your email before signing in.", Toast.LENGTH_LONG).show();
+                    startActivity(new Intent(this, VerifyEmailActivity.class));
+                    return;
+                }
                 Toast.makeText(this, "Sign in successful!", Toast.LENGTH_SHORT).show();
                 startActivity(new Intent(this, MainActivity.class));
                 finish();

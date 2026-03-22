@@ -4,9 +4,12 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.example.studysync_project.ui.auth.LoginActivity;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 public class SplashActivity extends AppCompatActivity {
 
@@ -16,7 +19,8 @@ public class SplashActivity extends AppCompatActivity {
         setContentView(R.layout.activity_splash);
 
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            boolean isLoggedIn = FirebaseAuth.getInstance().getCurrentUser() != null;
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            boolean isLoggedIn = user != null && user.isEmailVerified();
             Intent intent = isLoggedIn
                     ? new Intent(this, MainActivity.class)
                     : new Intent(this, LoginActivity.class);

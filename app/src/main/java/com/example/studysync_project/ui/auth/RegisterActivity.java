@@ -3,7 +3,9 @@ package com.example.studysync_project.ui.auth;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.example.studysync_project.data.model.UserProfile;
 import com.example.studysync_project.databinding.ActivityRegisterBinding;
 import com.google.firebase.auth.FirebaseAuth;
@@ -64,17 +66,18 @@ public class RegisterActivity extends AppCompatActivity {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnSuccessListener(r -> {
                 String uid = r.getUser().getUid();
-                // Create profile using our UserProfile model
                 UserProfile userProfile = new UserProfile(uid, email, name);
-                
-                db.collection("users").document(uid).set(userProfile)
-                    .addOnSuccessListener(task -> {
-                        Toast.makeText(this, "Account created successfully!", Toast.LENGTH_SHORT).show();
-                        startActivity(new Intent(this, LoginActivity.class));
-                        finish();
-                    })
-                    .addOnFailureListener(e ->
-                        Toast.makeText(this, "Error saving profile: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                // Force token refresh so Firestore auth.uid is available immediately
+                r.getUser().getIdToken(true).addOnSuccessListener(tokenResult -> {
+                    r.getUser().sendEmailVerification();
+                    db.collection("users").document(uid).set(userProfile)
+                            .addOnSuccessListener(task -> {
+                                startActivity(new Intent(this, VerifyEmailActivity.class));
+                                finish();
+                            })
+                            .addOnFailureListener(e ->
+                                    Toast.makeText(this, "Error saving profile: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                });
             })
             .addOnFailureListener(e -> {
                 String errorMsg = e.getMessage();

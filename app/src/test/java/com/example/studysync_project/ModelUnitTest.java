@@ -1,14 +1,18 @@
 package com.example.studysync_project;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
-import static org.junit.Assert.*;
-
-import com.example.studysync_project.data.model.Task;
 import com.example.studysync_project.data.model.Quiz;
 import com.example.studysync_project.data.model.QuizAttempt;
+import com.example.studysync_project.data.model.Task;
 import com.example.studysync_project.data.model.TimerSession;
 import com.example.studysync_project.utils.IdUtil;
+
+import org.junit.Test;
 
 public class ModelUnitTest {
 

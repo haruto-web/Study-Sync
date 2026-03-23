@@ -1,5 +1,9 @@
 package com.example.studysync_project;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import android.content.Context;
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
@@ -9,12 +13,12 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.example.studysync_project.data.db.AppDatabase;
-import com.example.studysync_project.data.db.dao.TaskDao;
-import com.example.studysync_project.data.db.dao.QuizDao;
 import com.example.studysync_project.data.db.dao.QuizAttemptDao;
-import com.example.studysync_project.data.model.Task;
+import com.example.studysync_project.data.db.dao.QuizDao;
+import com.example.studysync_project.data.db.dao.TaskDao;
 import com.example.studysync_project.data.model.Quiz;
 import com.example.studysync_project.data.model.QuizAttempt;
+import com.example.studysync_project.data.model.Task;
 import com.example.studysync_project.utils.IdUtil;
 
 import org.junit.After;
@@ -26,8 +30,6 @@ import org.junit.runner.RunWith;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.*;
 
 @RunWith(AndroidJUnit4.class)
 public class DatabaseInstrumentedTest {

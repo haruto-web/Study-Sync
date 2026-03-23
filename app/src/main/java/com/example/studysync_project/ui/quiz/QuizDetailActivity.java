@@ -1,13 +1,9 @@
 package com.example.studysync_project.ui.quiz;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.studysync_project.data.model.Question;
 import com.example.studysync_project.data.model.Quiz;
@@ -36,7 +32,7 @@ public class QuizDetailActivity extends AppCompatActivity {
     private Quiz quiz;
     private List<Question> questions;
     private int currentQuestionIndex = 0;
-    private Map<String, String> answers = new HashMap<>(); // questionId -> answer (A, B, C, D)
+    private final Map<String, String> answers = new HashMap<>(); // questionId -> answer (A, B, C, D)
     private long startTime;
     private QuestionRepository questionRepository;
     private QuizAttemptRepository quizAttemptRepository;

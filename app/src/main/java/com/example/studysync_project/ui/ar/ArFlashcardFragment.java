@@ -81,7 +81,7 @@ public class ArFlashcardFragment extends Fragment {
             for (HitResult hit : hits) {
                 if (hit.getTrackable() instanceof Plane &&
                         ((Plane) hit.getTrackable()).getType() == Plane.Type.HORIZONTAL_UPWARD_FACING &&
-                        ((Plane) hit.getTrackable()).getTrackingState() == TrackingState.TRACKING) {
+                        hit.getTrackable().getTrackingState() == TrackingState.TRACKING) {
                     placeFlashcard(hit, text);
                     break;
                 }

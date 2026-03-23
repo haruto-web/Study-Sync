@@ -11,6 +11,7 @@ import com.example.studysync_project.data.repository.QuizAttemptRepository;
 import com.example.studysync_project.databinding.ActivityQuizResultBinding;
 import com.example.studysync_project.utils.GeminiApiClient;
 import com.example.studysync_project.utils.IdUtil;
+import com.example.studysync_project.utils.PdfExportUtil;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.gson.JsonObject;
 
@@ -72,6 +73,16 @@ public class QuizResultActivity extends AppCompatActivity {
                 startActivity(intent);
                 finish();
             }
+        });
+
+        // Export PDF
+        binding.toolbar.inflateMenu(com.example.studysync_project.R.menu.menu_export);
+        binding.toolbar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == com.example.studysync_project.R.id.action_export_pdf) {
+                exportResultPdf(subject, score, total, percent);
+                return true;
+            }
+            return false;
         });
     }
 
@@ -139,5 +150,22 @@ public class QuizResultActivity extends AppCompatActivity {
         attempt.setAttemptId(IdUtil.generateId("attempt"));
         attempt.setPassed(percent >= 60);
         new QuizAttemptRepository(this).saveQuizAttempt(attempt, userId);
+    }
+
+    private void exportResultPdf(String subject, int score, int total, int percent) {
+        java.util.List<String> lines = new java.util.ArrayList<>();
+        lines.add("Subject: " + (subject != null ? subject : "N/A"));
+        lines.add("Score: " + score + " / " + total + "  (" + percent + "%)");
+        lines.add("Result: " + (percent >= 60 ? "PASSED" : "FAILED"));
+        lines.add("");
+        lines.add("## AI Feedback");
+        String feedback = binding.tvAiFeedback.getText() != null
+                ? binding.tvAiFeedback.getText().toString() : "";
+        // Split long feedback into lines
+        for (int i = 0; i < feedback.length(); i += 80) {
+            lines.add(feedback.substring(i, Math.min(i + 80, feedback.length())));
+        }
+        PdfExportUtil.exportAndShare(this, "Quiz Result — " + (subject != null ? subject : "Quiz"),
+                lines, "quiz_result_" + System.currentTimeMillis());
     }
 }

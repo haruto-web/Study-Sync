@@ -15,6 +15,7 @@ import com.example.studysync_project.data.model.QuizAttempt;
 import com.example.studysync_project.data.repository.QuestionRepository;
 import com.example.studysync_project.data.repository.QuizAttemptRepository;
 import com.example.studysync_project.databinding.ActivityQuizDetailBinding;
+import com.example.studysync_project.utils.AppExecutors;
 import com.example.studysync_project.utils.IdUtil;
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -75,25 +76,18 @@ public class QuizDetailActivity extends AppCompatActivity {
     }
 
     private void loadQuizData() {
-        // In production, fetch from repository
-        // For now, using placeholder
-        quiz = new Quiz();
-        quiz.setQuizId(quizId);
-        quiz.setTitle("Sample Quiz");
-        quiz.setTotalQuestions(3);
-        quiz.setPassingScore(60);
-
-        // Load questions from repository (synchronously)
-        List<Question> loadedQuestions = questionRepository.getQuestionsForQuizSync(quizId);
-        this.questions = loadedQuestions != null ? loadedQuestions : new ArrayList<>();
-        
-        if (questions.isEmpty()) {
-            Toast.makeText(this, "No questions found for this quiz", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
-        
-        displayQuestion();
+        AppExecutors.diskIO().execute(() -> {
+            List<Question> loaded = questionRepository.getQuestionsForQuizSync(quizId);
+            runOnUiThread(() -> {
+                this.questions = loaded != null ? loaded : new ArrayList<>();
+                if (questions.isEmpty()) {
+                    Toast.makeText(this, "No questions found for this quiz", Toast.LENGTH_SHORT).show();
+                    finish();
+                    return;
+                }
+                displayQuestion();
+            });
+        });
     }
 
     private void setupUI() {

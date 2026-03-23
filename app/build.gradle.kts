@@ -77,8 +77,10 @@ dependencies {
     // Charts
     implementation(libs.mpandroidchart)
 
-    // ARCore
-    implementation(libs.arcore)
+    // ARCore + Sceneform (exclude legacy support lib that conflicts with AndroidX)
+    implementation("com.google.ar.sceneform.ux:sceneform-ux:1.17.1") {
+        exclude(group = "com.android.support")
+    }
 
     // PDF Viewer
     implementation(libs.androidx.pdf)
@@ -86,4 +88,5 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
 }

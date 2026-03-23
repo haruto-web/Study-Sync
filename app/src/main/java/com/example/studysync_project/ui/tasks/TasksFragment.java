@@ -1,5 +1,6 @@
 package com.example.studysync_project.ui.tasks;
 
+import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,20 +12,25 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.example.studysync_project.R;
 import com.example.studysync_project.data.model.Task;
+import com.example.studysync_project.databinding.DialogCreateTaskBinding;
 import com.example.studysync_project.databinding.FragmentTasksBinding;
 import com.example.studysync_project.utils.IdUtil;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.auth.FirebaseAuth;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Locale;
 
 public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickListener {
 
     private FragmentTasksBinding binding;
     private TasksViewModel viewModel;
     private TaskAdapter adapter;
-    private FirebaseAuth auth;
     private String userId;
+    private final Calendar selectedDueDate = Calendar.getInstance();
 
     @Nullable
     @Override
@@ -37,15 +43,14 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        auth = FirebaseAuth.getInstance();
-        userId = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
+        userId = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
 
         if (userId == null) {
             Toast.makeText(requireContext(), "User not authenticated", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Initialize ViewModel
         viewModel = new ViewModelProvider(this, new androidx.lifecycle.ViewModelProvider.Factory() {
             @NonNull
             @Override
@@ -54,11 +59,9 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
             }
         }).get(TasksViewModel.class);
 
-        // Setup RecyclerView
         adapter = new TaskAdapter(this);
         binding.rvTasks.setAdapter(adapter);
 
-        // Observe tasks
         viewModel.getAllTasksForUser(userId).observe(getViewLifecycleOwner(), tasks -> {
             if (tasks != null && !tasks.isEmpty()) {
                 adapter.submitList(tasks);
@@ -70,74 +73,129 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
             }
         });
 
-        // Tab selection listener
         binding.tabsFilter.addOnTabSelectedListener(new com.google.android.material.tabs.TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(com.google.android.material.tabs.TabLayout.Tab tab) {
-                int position = tab.getPosition();
-                switch (position) {
-                    case 0: // All
+                switch (tab.getPosition()) {
+                    case 0:
                         viewModel.getAllTasksForUser(userId).observe(getViewLifecycleOwner(), tasks -> adapter.submitList(tasks));
                         break;
-                    case 1: // Active
+                    case 1:
                         viewModel.getAllTasksForUser(userId).observe(getViewLifecycleOwner(), tasks -> {
-                            if (tasks != null) {
+                            if (tasks != null)
                                 adapter.submitList(tasks.stream().filter(t -> !t.isCompleted()).toList());
-                            }
                         });
                         break;
-                    case 2: // Completed
+                    case 2:
                         viewModel.getCompletedTasks(userId).observe(getViewLifecycleOwner(), tasks -> adapter.submitList(tasks));
                         break;
                 }
             }
 
             @Override
-            public void onTabUnselected(com.google.android.material.tabs.TabLayout.Tab tab) {}
+            public void onTabUnselected(com.google.android.material.tabs.TabLayout.Tab tab) {
+            }
 
             @Override
-            public void onTabReselected(com.google.android.material.tabs.TabLayout.Tab tab) {}
+            public void onTabReselected(com.google.android.material.tabs.TabLayout.Tab tab) {
+            }
         });
 
-        // FAB click listener
-        binding.fabAddTask.setOnClickListener(v -> createSampleTask());
+        binding.fabAddTask.setOnClickListener(v -> showCreateTaskDialog(null));
     }
 
-    /**
-     * Create a sample task for demo purposes
-     * In production, this would open a dialog for creating tasks
-     */
-    private void createSampleTask() {
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.DAY_OF_MONTH, 3);
+    private void showCreateTaskDialog(@Nullable Task existingTask) {
+        DialogCreateTaskBinding dialogBinding = DialogCreateTaskBinding.inflate(LayoutInflater.from(requireContext()));
+        selectedDueDate.setTimeInMillis(System.currentTimeMillis() + 3 * 24 * 60 * 60 * 1000L);
+        updateDateButton(dialogBinding);
 
-        Task task = new Task(
-            userId,
-            "Study Chapter 5",
-            "Review Chapter 5 of Mathematics textbook",
-            calendar.getTimeInMillis(),
-            "HIGH",
-            "Mathematics"
-        );
-        task.setTaskId(IdUtil.generateId("task"));
+        if (existingTask != null) {
+            dialogBinding.etTitle.setText(existingTask.getTitle());
+            dialogBinding.etDescription.setText(existingTask.getDescription());
+            dialogBinding.etCategory.setText(existingTask.getCategory());
+            selectedDueDate.setTimeInMillis(existingTask.getDueDate());
+            updateDateButton(dialogBinding);
+            switch (existingTask.getPriority()) {
+                case "LOW":
+                    dialogBinding.chipLow.setChecked(true);
+                    break;
+                case "HIGH":
+                    dialogBinding.chipHigh.setChecked(true);
+                    break;
+                default:
+                    dialogBinding.chipMedium.setChecked(true);
+            }
+        }
 
-        viewModel.createTask(task, userId);
-        Toast.makeText(requireContext(), "Task created!", Toast.LENGTH_SHORT).show();
+        dialogBinding.btnPickDate.setOnClickListener(v -> {
+            new DatePickerDialog(requireContext(),
+                    (dp, y, m, d) -> {
+                        selectedDueDate.set(y, m, d);
+                        updateDateButton(dialogBinding);
+                    },
+                    selectedDueDate.get(Calendar.YEAR),
+                    selectedDueDate.get(Calendar.MONTH),
+                    selectedDueDate.get(Calendar.DAY_OF_MONTH)).show();
+        });
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(existingTask == null ? "New Task" : "Edit Task")
+                .setView(dialogBinding.getRoot())
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String title = dialogBinding.etTitle.getText() != null
+                            ? dialogBinding.etTitle.getText().toString().trim() : "";
+                    if (title.isEmpty()) {
+                        Toast.makeText(requireContext(), "Title is required", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    String description = dialogBinding.etDescription.getText() != null
+                            ? dialogBinding.etDescription.getText().toString().trim() : "";
+                    String category = dialogBinding.etCategory.getText() != null
+                            ? dialogBinding.etCategory.getText().toString().trim() : "General";
+                    String priority = getPriority(dialogBinding);
+
+                    if (existingTask == null) {
+                        Task task = new Task(userId, title, description,
+                                selectedDueDate.getTimeInMillis(), priority, category);
+                        task.setTaskId(IdUtil.generateId("task"));
+                        viewModel.createTask(task, userId);
+                        Toast.makeText(requireContext(), "Task created!", Toast.LENGTH_SHORT).show();
+                    } else {
+                        existingTask.setTitle(title);
+                        existingTask.setDescription(description);
+                        existingTask.setCategory(category);
+                        existingTask.setPriority(priority);
+                        existingTask.setDueDate(selectedDueDate.getTimeInMillis());
+                        viewModel.updateTask(existingTask);
+                        Toast.makeText(requireContext(), "Task updated!", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private String getPriority(DialogCreateTaskBinding b) {
+        if (b.chipHigh.isChecked()) return "HIGH";
+        if (b.chipLow.isChecked()) return "LOW";
+        return "MEDIUM";
+    }
+
+    private void updateDateButton(DialogCreateTaskBinding b) {
+        b.btnPickDate.setText("Due: " + new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+                .format(selectedDueDate.getTime()));
     }
 
     @Override
     public void onTaskClick(Task task) {
-        Toast.makeText(requireContext(), "Edit: " + task.getTitle(), Toast.LENGTH_SHORT).show();
-        // TODO: Open edit task dialog
+        showCreateTaskDialog(task);
     }
 
     @Override
     public void onTaskComplete(Task task) {
         task.setCompleted(!task.isCompleted());
         viewModel.updateTask(task);
-        Toast.makeText(requireContext(), 
-            task.isCompleted() ? "Task completed!" : "Task reactivated!", 
-            Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireContext(),
+                task.isCompleted() ? "Task completed!" : "Task reactivated!", Toast.LENGTH_SHORT).show();
     }
 
     @Override

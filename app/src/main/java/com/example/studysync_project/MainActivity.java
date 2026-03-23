@@ -58,4 +58,8 @@ public class MainActivity extends AppCompatActivity {
             NavigationUI.setupWithNavController(binding.bottomNavigation, navController);
         }
     }
+
+    public void navigateTo(int navItemId) {
+        if (binding != null) binding.bottomNavigation.setSelectedItemId(navItemId);
+    }
 }

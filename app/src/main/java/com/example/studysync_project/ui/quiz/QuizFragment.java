@@ -1,6 +1,7 @@
 package com.example.studysync_project.ui.quiz;
 
 import android.content.Intent;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -75,7 +76,9 @@ public class QuizFragment extends Fragment implements QuizAdapter.OnQuizClickLis
 
     @Override
     public void onQuizClick(Quiz quiz) {
-        Toast.makeText(requireContext(), quiz.getTitle(), Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(requireContext(), QuizDetailActivity.class);
+        intent.putExtra(QuizDetailActivity.EXTRA_QUIZ_ID, quiz.getQuizId());
+        startActivity(intent);
     }
 
     @Override

@@ -60,7 +60,6 @@ public abstract class AppDatabase extends RoomDatabase {
                             "studysync_database"
                         )
                         .fallbackToDestructiveMigration()
-                            .allowMainThreadQueries()
                         .build();
                 }
             }

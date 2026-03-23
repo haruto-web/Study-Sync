@@ -36,6 +36,9 @@ public interface TaskDao {
     @Query("SELECT * FROM tasks WHERE taskId = :taskId")
     LiveData<Task> getTaskById(String taskId);
 
+    @Query("SELECT * FROM tasks WHERE taskId = :taskId")
+    Task getTaskByIdSync(String taskId);
+
     @Query("SELECT * FROM tasks WHERE userId = :userId ORDER BY dueDate ASC, priority DESC")
     LiveData<List<Task>> getAllTasksForUser(String userId);
 

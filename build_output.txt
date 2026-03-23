@@ -1,0 +1,91 @@
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:dataBindingMergeDependencyArtifactsDebug UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:generateDebugResources
+> Task :app:processDebugGoogleServices UP-TO-DATE
+> Task :app:mergeDebugResources
+> Task :app:packageDebugResources
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:parseDebugLocalResources
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesDebug
+> Task :app:processDebugResources
+
+> Task :app:compileDebugJavaWithJavac
+D:\D\Study-Sync-main\app\src\main\java\com\example\studysync_project\data\model\UserProfile.java:12: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can use the @Ignore annotation to eliminate unwanted constructors.
+public class UserProfile {
+       ^
+D:\D\Study-Sync-main\app\src\main\java\com\example\studysync_project\data\model\Quiz.java:12: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can use the @Ignore annotation to eliminate unwanted constructors.
+public class Quiz {
+       ^
+D:\D\Study-Sync-main\app\src\main\java\com\example\studysync_project\data\model\Question.java:12: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can use the @Ignore annotation to eliminate unwanted constructors.
+public class Question {
+       ^
+D:\D\Study-Sync-main\app\src\main\java\com\example\studysync_project\data\model\Task.java:12: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can use the @Ignore annotation to eliminate unwanted constructors.
+public class Task {
+       ^
+D:\D\Study-Sync-main\app\src\main\java\com\example\studysync_project\data\model\TimerSession.java:12: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can use the @Ignore annotation to eliminate unwanted constructors.
+public class TimerSession {
+       ^
+D:\D\Study-Sync-main\app\src\main\java\com\example\studysync_project\data\model\QuizAttempt.java:12: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can use the @Ignore annotation to eliminate unwanted constructors.
+public class QuizAttempt {
+       ^
+D:\D\Study-Sync-main\app\src\main\java\com\example\studysync_project\data\model\UserProfile.java:12: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can use the @Ignore annotation to eliminate unwanted constructors.
+public class UserProfile {
+       ^
+D:\D\Study-Sync-main\app\src\main\java\com\example\studysync_project\data\model\Quiz.java:12: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can use the @Ignore annotation to eliminate unwanted constructors.
+public class Quiz {
+       ^
+D:\D\Study-Sync-main\app\src\main\java\com\example\studysync_project\data\model\Question.java:12: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can use the @Ignore annotation to eliminate unwanted constructors.
+public class Question {
+       ^
+D:\D\Study-Sync-main\app\src\main\java\com\example\studysync_project\data\model\Task.java:12: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can use the @Ignore annotation to eliminate unwanted constructors.
+public class Task {
+       ^
+D:\D\Study-Sync-main\app\src\main\java\com\example\studysync_project\data\model\TimerSession.java:12: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can use the @Ignore annotation to eliminate unwanted constructors.
+public class TimerSession {
+       ^
+D:\D\Study-Sync-main\app\src\main\java\com\example\studysync_project\data\model\QuizAttempt.java:12: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can use the @Ignore annotation to eliminate unwanted constructors.
+public class QuizAttempt {
+       ^
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+12 warnings
+
+> Task :app:processDebugJavaRes
+> Task :app:dexBuilderDebug
+> Task :app:mergeProjectDexDebug
+> Task :app:mergeDebugJavaResource
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+[Incubating] Problems report is available at: file:///D:/D/Study-Sync-main/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 36s
+38 actionable tasks: 14 executed, 24 up-to-date

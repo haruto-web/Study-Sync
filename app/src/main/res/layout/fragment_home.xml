@@ -24,6 +24,7 @@
             
             <!-- User Avatar -->
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_avatar"
                 android:layout_width="56dp"
                 android:layout_height="56dp"
                 app:cardCornerRadius="28dp"
@@ -338,6 +339,20 @@
                     style="@style/Widget.MaterialComponents.Button"
                     app:backgroundTint="@color/tertiary"
                     android:textColor="@color/on_tertiary"
+                    android:layout_marginStart="6dp"
+                    android:layout_marginEnd="6dp"
+                    app:cornerRadius="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_progress"
+                    style="@style/Widget.MaterialComponents.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_weight="1"
+                    android:text="Progress"
+                    android:textColor="@color/on_secondary"
+                    android:textSize="13sp"
+                    app:backgroundTint="@color/secondary"
                     app:cornerRadius="12dp"
                     android:layout_marginStart="6dp" />
             </LinearLayout>

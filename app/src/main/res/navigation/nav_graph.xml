@@ -26,7 +26,7 @@
 
     <fragment
         android:id="@+id/arFragment"
-        android:name="com.example.studysync_project.ui.ar.ArFragment"
+        android:name="com.example.studysync_project.ui.ar.ArFlashcardFragment"
         android:label="AR Flashcards" />
 
 </navigation>

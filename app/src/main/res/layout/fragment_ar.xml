@@ -1,80 +1,109 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:background="@color/background"
-    android:padding="24dp">
+    android:background="@color/background">
 
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:layout_marginBottom="24dp"
-        app:cardCornerRadius="20dp"
-        app:cardBackgroundColor="@color/primary_container"
-        app:cardElevation="0dp">
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center">
-            <ImageView
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:src="@drawable/ic_ar"
-                android:contentDescription="AR Icon"
-                android:tint="@color/primary" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+    <!-- AR Scene view fills the screen -->
+    <com.google.ar.sceneform.ArSceneView
+        android:id="@+id/ar_scene_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="AR Flashcards"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="@color/text_primary"
-        android:layout_marginBottom="12dp" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Coming in Phase 7"
-        android:textSize="16sp"
-        android:textColor="@color/text_secondary"
-        android:layout_marginBottom="24dp"
-        android:gravity="center" />
-
-    <com.google.android.material.card.MaterialCardView
+    <!-- Overlay controls at the bottom -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:cardCornerRadius="12dp"
-        app:cardBackgroundColor="@color/primary_container"
-        app:cardElevation="0dp"
-        app:strokeColor="@color/primary"
-        app:strokeWidth="1dp">
-        <LinearLayout
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="📱 Coming Soon"
-                android:textSize="14sp"
-                android:textColor="@color/on_primary_container" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Visualize 3D models and interactive flashcards using augmented reality technology."
-                android:textSize="13sp"
-                android:textColor="@color/on_primary_container"
-                android:layout_marginTop="8dp"
-                android:alpha="0.7" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+            app:cardBackgroundColor="@color/surface"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp">
 
-</LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tv_ar_instruction"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="12dp"
+                    android:gravity="center"
+                    android:text="Point camera at a flat surface, then tap to place a flashcard"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/til_flashcard_text"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:hint="Flashcard text">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_flashcard_text"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:maxLines="2" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_clear_ar"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="Clear All"
+                    app:cornerRadius="8dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+
+    <!-- Fallback shown when AR is not available -->
+    <LinearLayout
+        android:id="@+id/layout_ar_unavailable"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginBottom="16dp"
+            android:contentDescription="AR"
+            android:src="@drawable/ic_ar"
+            android:tint="@color/primary" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="AR Not Available"
+            android:textColor="@color/text_primary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_ar_unavailable_reason"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="This device does not support ARCore."
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+</FrameLayout>

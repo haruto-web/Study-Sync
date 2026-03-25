@@ -55,6 +55,14 @@
             android:exported="false"
             android:windowSoftInputMode="adjustPan|stateHidden" />
 
+        <activity
+            android:name=".ui.auth.TermsAndConditionsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.onboarding.OnboardingActivity"
+            android:exported="false" />
+
         <service
             android:name=".ui.timer.TimerService"
             android:exported="false"

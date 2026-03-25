@@ -1,0 +1,29 @@
+<resources>
+    <string-array name="grade_levels">
+        <item>Grade 1</item>
+        <item>Grade 2</item>
+        <item>Grade 3</item>
+        <item>Grade 4</item>
+        <item>Grade 5</item>
+        <item>Grade 6</item>
+        <item>Grade 7</item>
+        <item>Grade 8</item>
+        <item>Grade 9</item>
+        <item>Grade 10</item>
+    </string-array>
+
+    <string-array name="study_goals">
+        <item>Exam prep</item>
+        <item>Homework help</item>
+        <item>Concept mastery</item>
+        <item>Other</item>
+    </string-array>
+
+    <string-array name="subjects">
+        <item>English</item>
+        <item>Mathematics</item>
+        <item>Science</item>
+        <item>Filipino</item>
+        <item>Araling Panlipunan</item>
+    </string-array>
+</resources>

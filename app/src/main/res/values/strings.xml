@@ -1,3 +1,21 @@
 <resources>
     <string name="app_name">StudySync-project</string>
+
+    <string name="terms_title">Terms &amp; Data Consent</string>
+    <string name="terms_subtitle">We use your learning data to personalize recommendations and feedback.</string>
+    <string name="terms_body">By using StudySync, you understand that we may collect and store learning interaction data (for example: quiz results, time spent studying, and selected topics) to improve your experience with personalized recommendations and analytics-driven prompts.\n\nIf you decline, you can still use the app in limited mode, but personalization and analytics-driven prompts will be disabled.</string>
+    <string name="terms_accept">Accept &amp; Enable Personalization</string>
+    <string name="terms_decline">Decline (Limited Mode)</string>
+
+    <string name="onboarding_title">Quick Setup</string>
+    <string name="onboarding_subtitle">Help us tailor your study experience.</string>
+    <string name="onboarding_grade_level">Grade level</string>
+    <string name="onboarding_goal">Primary goal</string>
+    <string name="onboarding_subject">Primary subject</string>
+    <string name="onboarding_topics">Topic interests (comma-separated)</string>
+    <string name="onboarding_continue">Continue</string>
+
+    <string name="home_recommended_title">Recommended Next</string>
+    <string name="home_ready_modules_title">Ready-made Modules</string>
+    <string name="home_limited_mode_note">Enable personalization to get recommendations.</string>
 </resources>

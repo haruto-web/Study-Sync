@@ -6,7 +6,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.studysync_project.MainActivity;
+import com.example.studysync_project.SplashActivity;
 import com.example.studysync_project.databinding.ActivityLoginBinding;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -25,7 +25,9 @@ public class LoginActivity extends AppCompatActivity {
         // Check if user is already logged in and verified
         FirebaseUser current = auth.getCurrentUser();
         if (current != null && current.isEmailVerified()) {
-            startActivity(new Intent(this, MainActivity.class));
+            Intent intent = new Intent(this, SplashActivity.class);
+            intent.putExtra(SplashActivity.EXTRA_SKIP_DELAY, true);
+            startActivity(intent);
             finish();
         }
 
@@ -58,7 +60,9 @@ public class LoginActivity extends AppCompatActivity {
                     return;
                 }
                 Toast.makeText(this, "Sign in successful!", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(this, MainActivity.class));
+                Intent intent = new Intent(this, SplashActivity.class);
+                intent.putExtra(SplashActivity.EXTRA_SKIP_DELAY, true);
+                startActivity(intent);
                 finish();
             })
             .addOnFailureListener(e -> {

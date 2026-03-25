@@ -19,8 +19,13 @@ import com.example.studysync_project.databinding.FragmentHomeBinding;
 import com.example.studysync_project.ui.auth.LoginActivity;
 import com.example.studysync_project.ui.profile.ProfileActivity;
 import com.example.studysync_project.ui.quiz.UploadModuleActivity;
+import com.example.studysync_project.utils.ConsentManager;
+import com.example.studysync_project.utils.ReadyModuleCatalog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class HomeFragment extends Fragment {
 
@@ -28,6 +33,14 @@ public class HomeFragment extends Fragment {
     private FirebaseAuth auth;
     private FirebaseFirestore db;
     private String userId;
+
+    private ReadyModuleAdapter readyModuleAdapter;
+    private ReadyModule recommendedModule;
+    private Double latestAverageScore;
+    private String profileGradeLevel;
+    private String profileGoal;
+    private String profileSubject;
+    private String profileTopicsCsv;
 
     @Nullable
     @Override
@@ -48,6 +61,7 @@ public class HomeFragment extends Fragment {
         loadUserData();
         loadLiveStats();
         setupClickListeners();
+        setupReadyModules();
     }
 
     private void loadUserData() {
@@ -58,6 +72,21 @@ public class HomeFragment extends Fragment {
                     if (name == null) name = doc.getString("fullName");
                     binding.tvWelcome.setText("Welcome back, " + (name != null ? name : "Student") + "!");
                     if (email != null) binding.tvUserEmail.setText(email);
+
+                profileGradeLevel = doc.getString("gradeLevel");
+                profileGoal = doc.getString("goal");
+                profileSubject = doc.getString("subjectsCsv");
+                profileTopicsCsv = doc.getString("topicsOfInterestCsv");
+
+                // Cache locally to support limited/offline behavior.
+                ConsentManager.storeOnboarding(requireContext(), userId,
+                    profileGradeLevel != null ? profileGradeLevel : "",
+                    profileGoal != null ? profileGoal : "",
+                    profileSubject != null ? profileSubject : "",
+                    profileTopicsCsv != null ? profileTopicsCsv : "");
+
+                updateReadyModules();
+                updateRecommendationCard();
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(getContext(), "Error loading user data", Toast.LENGTH_SHORT).show());
@@ -85,10 +114,156 @@ public class HomeFragment extends Fragment {
         attemptRepo.getAverageScoreForUser(userId).observe(getViewLifecycleOwner(), avg -> {
             if (avg != null && avg > 0) {
                 binding.tvQuizScore.setText(String.format("Avg score: %.0f%%", avg));
+                latestAverageScore = avg;
             } else {
                 binding.tvQuizScore.setText("No quizzes yet");
+                latestAverageScore = null;
+            }
+
+            updateRecommendationCard();
+        });
+    }
+
+    private void setupReadyModules() {
+        readyModuleAdapter = new ReadyModuleAdapter(module -> openReadyModule(module));
+        binding.rvReadyModules.setAdapter(readyModuleAdapter);
+
+        binding.btnRecommendationAction.setOnClickListener(v -> {
+            if (recommendedModule != null) {
+                openReadyModule(recommendedModule);
+            } else {
+                startActivity(new Intent(requireContext(), UploadModuleActivity.class));
             }
         });
+
+        updateReadyModules();
+        updateRecommendationCard();
+    }
+
+    private void updateReadyModules() {
+        if (binding == null || userId == null) return;
+
+        String gradeLevel = profileGradeLevel;
+        String subject = profileSubject;
+        String topicsCsv = profileTopicsCsv;
+
+        // Fall back to locally stored onboarding for limited mode/offline.
+        if (gradeLevel == null || gradeLevel.trim().isEmpty()) {
+            gradeLevel = ConsentManager.getStoredGradeLevel(requireContext(), userId);
+        }
+        if (subject == null || subject.trim().isEmpty()) {
+            subject = ConsentManager.getStoredSubject(requireContext(), userId);
+        }
+        if (topicsCsv == null) {
+            topicsCsv = ConsentManager.getStoredTopicsCsv(requireContext(), userId);
+        }
+
+        List<ReadyModule> filtered = filterModules(gradeLevel, subject, topicsCsv);
+        // Keep list short on Home.
+        if (filtered.size() > 3) {
+            filtered = filtered.subList(0, 3);
+        }
+        readyModuleAdapter.submitList(filtered);
+        binding.tvReadyModulesEmpty.setVisibility(filtered.isEmpty() ? View.VISIBLE : View.GONE);
+
+        recommendedModule = filtered.isEmpty() ? null : filtered.get(0);
+    }
+
+    private List<ReadyModule> filterModules(String gradeLevel, String subject, String topicsCsv) {
+        List<ReadyModule> all = ReadyModuleCatalog.getAllModules();
+        List<ReadyModule> out = new ArrayList<>();
+
+        String grade = gradeLevel != null ? gradeLevel.trim() : "";
+        String subj = subject != null ? subject.trim() : "";
+        String topics = topicsCsv != null ? topicsCsv.trim() : "";
+
+        String[] tokens = topics.isEmpty() ? new String[0] : topics.split(",");
+
+        for (ReadyModule m : all) {
+            if (!grade.isEmpty() && m.gradeLevel != null && !m.gradeLevel.equalsIgnoreCase(grade)) {
+                continue;
+            }
+            if (!subj.isEmpty() && m.subject != null && !m.subject.equalsIgnoreCase(subj)) {
+                continue;
+            }
+            if (tokens.length > 0) {
+                boolean match = false;
+                for (String t : tokens) {
+                    String tok = t != null ? t.trim().toLowerCase() : "";
+                    if (tok.isEmpty()) continue;
+                    String hay = (m.title + " " + m.topic + " " + m.description).toLowerCase();
+                    if (hay.contains(tok)) {
+                        match = true;
+                        break;
+                    }
+                }
+                if (!match) continue;
+            }
+
+            out.add(m);
+        }
+
+        // If topics filter returns nothing, fall back to grade+subject only.
+        if (out.isEmpty() && tokens.length > 0) {
+            for (ReadyModule m : all) {
+                if (!grade.isEmpty() && m.gradeLevel != null && !m.gradeLevel.equalsIgnoreCase(grade)) {
+                    continue;
+                }
+                if (!subj.isEmpty() && m.subject != null && !m.subject.equalsIgnoreCase(subj)) {
+                    continue;
+                }
+                out.add(m);
+            }
+        }
+
+        // If still empty, return unfiltered list.
+        if (out.isEmpty()) {
+            out.addAll(all);
+        }
+
+        return out;
+    }
+
+    private void updateRecommendationCard() {
+        if (binding == null || userId == null) return;
+
+        boolean personalizationEnabled = ConsentManager.isPersonalizationEnabled(requireContext(), userId);
+        binding.tvRecommendedHeader.setVisibility(personalizationEnabled ? View.VISIBLE : View.GONE);
+        binding.cardRecommendation.setVisibility(personalizationEnabled ? View.VISIBLE : View.GONE);
+
+        if (!personalizationEnabled) {
+            return;
+        }
+
+        String subject = profileSubject;
+        if (subject == null || subject.trim().isEmpty()) {
+            subject = ConsentManager.getStoredSubject(requireContext(), userId);
+        }
+        if (subject == null || subject.trim().isEmpty()) subject = "your subject";
+
+        String message;
+        if (latestAverageScore == null) {
+            message = "Start with a quick " + subject + " module to build momentum.";
+        } else if (latestAverageScore < 70.0) {
+            message = String.format("Your recent average is %.0f%%. Review a core %s module next.", latestAverageScore, subject);
+        } else {
+            message = String.format("Nice work (%.0f%% average). Try a slightly harder %s module next.", latestAverageScore, subject);
+        }
+
+        if (recommendedModule != null) {
+            message = message + " Recommended: " + recommendedModule.title + ".";
+        }
+
+        binding.tvRecommendationBody.setText(message);
+    }
+
+    private void openReadyModule(@NonNull ReadyModule module) {
+        Intent intent = new Intent(requireContext(), UploadModuleActivity.class);
+        intent.putExtra(UploadModuleActivity.EXTRA_READY_MODULE_TITLE, module.title);
+        intent.putExtra(UploadModuleActivity.EXTRA_READY_MODULE_SUBJECT, module.subject);
+        intent.putExtra(UploadModuleActivity.EXTRA_READY_MODULE_TEXT, module.content);
+        intent.putExtra(UploadModuleActivity.EXTRA_READY_MODULE_QUESTION_COUNT, 10);
+        startActivity(intent);
     }
 
     private void setupClickListeners() {

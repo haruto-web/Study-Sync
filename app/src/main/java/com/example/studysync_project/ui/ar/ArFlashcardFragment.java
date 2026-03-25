@@ -6,13 +6,18 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.ViewModelProvider;
 
+import com.example.studysync_project.data.model.Question;
+import com.example.studysync_project.data.model.Quiz;
 import com.example.studysync_project.databinding.FragmentArBinding;
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Frame;
@@ -25,6 +30,7 @@ import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.google.ar.sceneform.ux.TransformableNode;
 import com.google.ar.sceneform.ux.TransformationSystem;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +41,12 @@ public class ArFlashcardFragment extends Fragment {
     private FragmentArBinding binding;
     private ArSceneView arSceneView;
     private boolean arAvailable = false;
+
+    private ArFlashcardViewModel viewModel;
+    private List<Quiz> availableQuizzes = new ArrayList<>();
+    private List<Question> selectedQuestions = new ArrayList<>();
+    private int selectedQuestionIndex = 0;
+    private LiveData<List<Question>> questionsLiveData;
 
     @Nullable
     @Override
@@ -47,6 +59,16 @@ public class ArFlashcardFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        viewModel = new ViewModelProvider(this, new androidx.lifecycle.ViewModelProvider.Factory() {
+            @NonNull
+            @Override
+            public <T extends androidx.lifecycle.ViewModel> T create(@NonNull Class<T> modelClass) {
+                return (T) new ArFlashcardViewModel(requireContext());
+            }
+        }).get(ArFlashcardViewModel.class);
+
+        setupQuizSelector();
 
         ArCoreApk.Availability availability =
                 ArCoreApk.getInstance().checkAvailability(requireContext());
@@ -113,11 +135,88 @@ public class ArFlashcardFragment extends Fragment {
                     node.setParent(anchorNode);
                     node.setRenderable(renderable);
                     placedNodes.add(anchorNode);
+
+                    advanceSelectedQuestionIfNeeded();
                 })
                 .exceptionally(t -> {
                     Toast.makeText(requireContext(), "Failed to place card", Toast.LENGTH_SHORT).show();
                     return null;
                 });
+    }
+
+    private void setupQuizSelector() {
+        if (binding == null) return;
+
+        String userId = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+
+        if (userId == null) {
+            binding.tilQuizSelector.setVisibility(View.GONE);
+            return;
+        }
+
+        viewModel.syncQuizzes(userId);
+        viewModel.getAllQuizzesForUser(userId).observe(getViewLifecycleOwner(), quizzes -> {
+            availableQuizzes = quizzes != null ? quizzes : new ArrayList<>();
+            List<String> labels = new ArrayList<>();
+            for (Quiz q : availableQuizzes) {
+                String title = q.getTitle() != null && !q.getTitle().trim().isEmpty()
+                        ? q.getTitle().trim() : (q.getSubject() != null ? q.getSubject() : "Quiz");
+                String subject = q.getSubject() != null && !q.getSubject().trim().isEmpty()
+                        ? q.getSubject().trim() : null;
+                labels.add(subject != null && !title.contains(subject) ? (title + " (" + subject + ")") : title);
+            }
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                    requireContext(),
+                    android.R.layout.simple_list_item_1,
+                    labels
+            );
+            binding.actvQuizSelector.setAdapter(adapter);
+        });
+
+        binding.actvQuizSelector.setOnItemClickListener((parent, view, position, id) -> {
+            if (position < 0 || position >= availableQuizzes.size()) return;
+            Quiz selected = availableQuizzes.get(position);
+            String quizId = selected.getQuizId();
+            if (quizId == null || quizId.trim().isEmpty()) {
+                Toast.makeText(requireContext(), "Selected quiz is missing an ID", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            selectedQuestionIndex = 0;
+            selectedQuestions = new ArrayList<>();
+
+            viewModel.syncQuestions(quizId);
+            if (questionsLiveData != null) {
+                questionsLiveData.removeObservers(getViewLifecycleOwner());
+            }
+            questionsLiveData = viewModel.getQuestionsForQuiz(quizId);
+            questionsLiveData.observe(getViewLifecycleOwner(), questions -> {
+                selectedQuestions = questions != null ? questions : new ArrayList<>();
+                selectedQuestionIndex = 0;
+                updateFlashcardInputFromSelectedQuestion();
+                if (selectedQuestions.isEmpty()) {
+                    Toast.makeText(requireContext(), "No questions found for this quiz", Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+    }
+
+    private void updateFlashcardInputFromSelectedQuestion() {
+        if (binding == null) return;
+        if (selectedQuestions == null || selectedQuestions.isEmpty()) return;
+        if (selectedQuestionIndex < 0 || selectedQuestionIndex >= selectedQuestions.size()) {
+            selectedQuestionIndex = 0;
+        }
+        String text = selectedQuestions.get(selectedQuestionIndex).getQuestionText();
+        if (text != null) binding.etFlashcardText.setText(text);
+    }
+
+    private void advanceSelectedQuestionIfNeeded() {
+        if (selectedQuestions == null || selectedQuestions.isEmpty()) return;
+        selectedQuestionIndex++;
+        if (selectedQuestionIndex >= selectedQuestions.size()) selectedQuestionIndex = 0;
+        updateFlashcardInputFromSelectedQuestion();
     }
 
     private TextView buildCardView(String text) {

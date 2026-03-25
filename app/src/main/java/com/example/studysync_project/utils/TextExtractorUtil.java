@@ -3,9 +3,14 @@ package com.example.studysync_project.utils;
 import android.content.Context;
 import android.net.Uri;
 
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader;
+import com.tom_roush.pdfbox.pdmodel.PDDocument;
+import com.tom_roush.pdfbox.text.PDFTextStripper;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Locale;
 
 public class TextExtractorUtil {
 
@@ -15,15 +20,36 @@ public class TextExtractorUtil {
      * For TXT/PPT, reads line by line.
      */
     public static String extract(Context context, Uri uri) {
+        String mimeType = null;
         try {
-            String mimeType = context.getContentResolver().getType(uri);
-            InputStream inputStream = context.getContentResolver().openInputStream(uri);
-            if (inputStream == null) return null;
+            mimeType = context.getContentResolver().getType(uri);
+        } catch (Exception ignored) {
+        }
 
-            if (mimeType != null && mimeType.equals("text/plain")) {
-                return readTextStream(inputStream);
-            } else {
-                // For PDF and PPT: extract readable text segments from raw bytes
+        String normalized = mimeType != null ? mimeType.toLowerCase(Locale.US) : null;
+
+        try {
+            if ("text/plain".equals(normalized)) {
+                try (InputStream inputStream = context.getContentResolver().openInputStream(uri)) {
+                    if (inputStream == null) return null;
+                    return readTextStream(inputStream);
+                }
+            }
+
+            if ("application/pdf".equals(normalized)) {
+                PDFBoxResourceLoader.init(context.getApplicationContext());
+                try (InputStream inputStream = context.getContentResolver().openInputStream(uri);
+                     PDDocument document = inputStream != null ? PDDocument.load(inputStream) : null) {
+                    if (document == null) return null;
+                    PDFTextStripper stripper = new PDFTextStripper();
+                    stripper.setSortByPosition(true);
+                    return stripper.getText(document);
+                }
+            }
+
+            // Fallback: attempt to extract readable text segments from raw bytes (legacy behavior)
+            try (InputStream inputStream = context.getContentResolver().openInputStream(uri)) {
+                if (inputStream == null) return null;
                 return extractReadableText(inputStream);
             }
         } catch (Exception e) {
@@ -67,7 +93,6 @@ public class TextExtractorUtil {
             }
         }
         if (word.length() >= 4) sb.append(word);
-        inputStream.close();
         return sb.toString();
     }
 }

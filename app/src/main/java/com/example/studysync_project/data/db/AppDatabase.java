@@ -3,8 +3,10 @@ package com.example.studysync_project.data.db;
 import android.content.Context;
 
 import androidx.room.Database;
+import androidx.room.migration.Migration;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
+import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.example.studysync_project.data.db.dao.QuestionDao;
 import com.example.studysync_project.data.db.dao.QuizAttemptDao;
@@ -32,12 +34,28 @@ import com.example.studysync_project.data.model.UserProfile;
         TimerSession.class,
         QuizAttempt.class
     },
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
 
     private static volatile AppDatabase instance;
+
+    private static final Migration MIGRATION_1_2 = new Migration(1, 2) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            // Consent + onboarding fields
+            database.execSQL("ALTER TABLE users ADD COLUMN termsAccepted INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE users ADD COLUMN termsAcceptedAt INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE users ADD COLUMN termsVersion INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE users ADD COLUMN personalizationEnabled INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE users ADD COLUMN gradeLevel TEXT");
+            database.execSQL("ALTER TABLE users ADD COLUMN goal TEXT");
+            database.execSQL("ALTER TABLE users ADD COLUMN subjectsCsv TEXT");
+            database.execSQL("ALTER TABLE users ADD COLUMN topicsOfInterestCsv TEXT");
+            database.execSQL("ALTER TABLE users ADD COLUMN weeklyStudyTargetMinutes INTEGER NOT NULL DEFAULT 0");
+        }
+    };
 
     // Abstract methods to get DAOs
     public abstract UserProfileDao userProfileDao();
@@ -59,7 +77,7 @@ public abstract class AppDatabase extends RoomDatabase {
                             AppDatabase.class,
                             "studysync_database"
                         )
-                        .fallbackToDestructiveMigration()
+                        .addMigrations(MIGRATION_1_2)
                         .build();
                 }
             }

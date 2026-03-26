@@ -34,7 +34,6 @@ public class RegisterActivity extends AppCompatActivity {
         String email = binding.etEmail.getText().toString().trim();
         String password = binding.etPassword.getText().toString().trim();
         String confirmPassword = binding.etConfirmPassword.getText().toString().trim();
-        boolean termsAccepted = binding.cbTerms.isChecked();
 
         // Validation
         if (name.isEmpty()) {
@@ -57,11 +56,6 @@ public class RegisterActivity extends AppCompatActivity {
             binding.etConfirmPassword.setError("Passwords do not match");
             return;
         }
-        if (!termsAccepted) {
-            Toast.makeText(this, "Please accept the Terms & Conditions", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         // Create user account
         auth.createUserWithEmailAndPassword(email, password)
             .addOnSuccessListener(r -> {
@@ -72,7 +66,9 @@ public class RegisterActivity extends AppCompatActivity {
                     r.getUser().sendEmailVerification();
                     db.collection("users").document(uid).set(userProfile)
                             .addOnSuccessListener(task -> {
-                                startActivity(new Intent(this, VerifyEmailActivity.class));
+                                Intent intent = new Intent(this, TermsAndConditionsActivity.class);
+                                intent.putExtra(TermsAndConditionsActivity.EXTRA_DESTINATION, TermsAndConditionsActivity.DEST_VERIFY_EMAIL);
+                                startActivity(intent);
                                 finish();
                             })
                             .addOnFailureListener(e ->

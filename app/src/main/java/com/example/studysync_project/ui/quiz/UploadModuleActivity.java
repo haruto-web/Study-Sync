@@ -12,21 +12,35 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.studysync_project.BuildConfig;
+import com.example.studysync_project.data.model.Question;
+import com.example.studysync_project.data.model.Quiz;
+import com.example.studysync_project.data.repository.QuestionRepository;
+import com.example.studysync_project.data.repository.QuizRepository;
 import com.example.studysync_project.databinding.ActivityUploadModuleBinding;
 import com.example.studysync_project.utils.GeminiApiClient;
+import com.example.studysync_project.utils.IdUtil;
+import com.example.studysync_project.utils.NetworkUtil;
 import com.example.studysync_project.utils.TextExtractorUtil;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class UploadModuleActivity extends AppCompatActivity {
+
+    public static final String EXTRA_READY_MODULE_TEXT = "extra_ready_module_text";
+    public static final String EXTRA_READY_MODULE_TITLE = "extra_ready_module_title";
+    public static final String EXTRA_READY_MODULE_SUBJECT = "extra_ready_module_subject";
+    public static final String EXTRA_READY_MODULE_QUESTION_COUNT = "extra_ready_module_question_count";
 
     private ActivityUploadModuleBinding binding;
     private Uri selectedFileUri;
@@ -39,6 +53,8 @@ public class UploadModuleActivity extends AppCompatActivity {
                 binding.tvFileName.setText(getFileName(uri));
             });
     private String extractedText;
+    private String providedModuleText;
+    private String providedModuleTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +63,23 @@ public class UploadModuleActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         binding.toolbar.setNavigationOnClickListener(v -> finish());
+
+        providedModuleText = getIntent().getStringExtra(EXTRA_READY_MODULE_TEXT);
+        providedModuleTitle = getIntent().getStringExtra(EXTRA_READY_MODULE_TITLE);
+        String providedSubject = getIntent().getStringExtra(EXTRA_READY_MODULE_SUBJECT);
+        int providedCount = getIntent().getIntExtra(EXTRA_READY_MODULE_QUESTION_COUNT, 10);
+
+        if (providedModuleText != null && !providedModuleText.trim().isEmpty()) {
+            binding.tvFileName.setText("Ready module: " + (providedModuleTitle != null ? providedModuleTitle : "Module"));
+            binding.cardPickFile.setEnabled(false);
+            binding.cardPickFile.setAlpha(0.6f);
+            if (providedSubject != null && binding.etSubject.getText() != null) {
+                binding.etSubject.setText(providedSubject);
+            }
+            if (binding.etQuestionCount.getText() != null) {
+                binding.etQuestionCount.setText(String.valueOf(providedCount));
+            }
+        }
         binding.cardPickFile.setOnClickListener(v ->
                 filePicker.launch(new String[]{"application/pdf", "text/plain",
                         "application/vnd.ms-powerpoint",
@@ -56,10 +89,24 @@ public class UploadModuleActivity extends AppCompatActivity {
     }
 
     private void startGeneration() {
-        if (selectedFileUri == null) {
+        boolean usingProvidedText = providedModuleText != null && !providedModuleText.trim().isEmpty();
+        if (!usingProvidedText && selectedFileUri == null) {
             Toast.makeText(this, "Please select a file first", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        if (BuildConfig.GEMINI_API_KEY == null || BuildConfig.GEMINI_API_KEY.trim().isEmpty()) {
+            Toast.makeText(this,
+                    "Missing GEMINI_API_KEY. Add GEMINI_API_KEY=... to local.properties and rebuild.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        if (!NetworkUtil.isNetworkAvailable(this)) {
+            Toast.makeText(this, "No internet connection", Toast.LENGTH_LONG).show();
+            return;
+        }
+
         String subject = binding.etSubject.getText() != null
                 ? binding.etSubject.getText().toString().trim() : "";
         if (subject.isEmpty()) {
@@ -76,10 +123,18 @@ public class UploadModuleActivity extends AppCompatActivity {
         } catch (NumberFormatException ignored) {
         }
 
-        setLoading(true, "Extracting text from file...");
-
         int finalCount = questionCount;
         String finalSubject = subject;
+
+        if (usingProvidedText) {
+            setLoading(true, "AI is analyzing your module...");
+            String normalized = providedModuleText.trim().replaceAll("\\s+", " ");
+            extractedText = normalized.length() > 8000 ? normalized.substring(0, 8000) : normalized;
+            callGemini(extractedText, finalSubject, finalCount);
+            return;
+        }
+
+        setLoading(true, "Extracting text from file...");
 
         java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newSingleThreadExecutor();
         executor.execute(() -> {
@@ -92,64 +147,141 @@ public class UploadModuleActivity extends AppCompatActivity {
                     return;
                 }
 
-                extractedText = text.length() > 8000 ? text.substring(0, 8000) : text;
+                String normalized = text.trim().replaceAll("\\s+", " ");
+                extractedText = normalized.length() > 8000 ? normalized.substring(0, 8000) : normalized;
                 setLoading(true, "AI is analyzing your module...");
-
-                GeminiApiClient.generateQuiz(extractedText, finalSubject, finalCount)
-                        .enqueue(new Callback<JsonObject>() {
-                            @Override
-                            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                                setLoading(false, "");
-                                if (!response.isSuccessful() || response.body() == null) {
-                                    Toast.makeText(UploadModuleActivity.this,
-                                            "AI request failed. Check your API key.", Toast.LENGTH_LONG).show();
-                                    return;
-                                }
-                                try {
-                                    String rawText = response.body()
-                                            .getAsJsonArray("candidates").get(0).getAsJsonObject()
-                                            .getAsJsonObject("content")
-                                            .getAsJsonArray("parts").get(0).getAsJsonObject()
-                                            .get("text").getAsString();
-
-                                    rawText = rawText.replaceAll("```json", "").replaceAll("```", "").trim();
-
-                                    JsonArray questionsJson = JsonParser.parseString(rawText).getAsJsonArray();
-                                    ArrayList<String[]> questions = new ArrayList<>();
-                                    for (JsonElement el : questionsJson) {
-                                        JsonObject q = el.getAsJsonObject();
-                                        questions.add(new String[]{
-                                                q.get("question").getAsString(),
-                                                q.get("optionA").getAsString(),
-                                                q.get("optionB").getAsString(),
-                                                q.get("optionC").getAsString(),
-                                                q.get("optionD").getAsString(),
-                                                q.get("correctAnswer").getAsString()
-                                        });
-                                    }
-
-                                    Intent intent = new Intent(UploadModuleActivity.this, QuizTakeActivity.class);
-                                    intent.putExtra(QuizTakeActivity.EXTRA_SUBJECT, finalSubject);
-                                    intent.putParcelableArrayListExtra(QuizTakeActivity.EXTRA_QUESTIONS,
-                                            toParcelableList(questions));
-                                    startActivity(intent);
-
-                                } catch (Exception e) {
-                                    Toast.makeText(UploadModuleActivity.this,
-                                            "Failed to parse quiz. Try again.", Toast.LENGTH_LONG).show();
-                                }
-                            }
-
-                            @Override
-                            public void onFailure(Call<JsonObject> call, Throwable t) {
-                                setLoading(false, "");
-                                Toast.makeText(UploadModuleActivity.this,
-                                        "Network error: " + t.getMessage(), Toast.LENGTH_LONG).show();
-                            }
-                        });
+                callGemini(extractedText, finalSubject, finalCount);
             });
         });
         executor.shutdown();
+    }
+
+    private void callGemini(String moduleText, String subject, int questionCount) {
+        GeminiApiClient.generateQuiz(moduleText, subject, questionCount)
+                .enqueue(new Callback<JsonObject>() {
+                    @Override
+                    public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                        setLoading(false, "");
+                        if (!response.isSuccessful() || response.body() == null) {
+                            String msg;
+                            int code = response.code();
+                            if (code == 401 || code == 403) {
+                                msg = "Invalid API key (" + code + ").";
+                            } else if (code == 404) {
+                                msg = "Gemini endpoint/model not found (404). Updating model fallback may fix this.";
+                            } else if (code == 429) {
+                                msg = "API quota exceeded (429). Try again later.";
+                            } else if (code >= 500) {
+                                msg = "Gemini server error (" + code + "). Try again later.";
+                            } else {
+                                msg = "AI request failed (" + code + ").";
+                            }
+
+                            try {
+                                if (response.errorBody() != null) {
+                                    String err = response.errorBody().string();
+                                    if (err != null) {
+                                        err = err.trim().replaceAll("\\s+", " ");
+                                        if (err.length() > 200) err = err.substring(0, 200) + "…";
+                                        msg = msg + " " + err;
+                                    }
+                                }
+                            } catch (Exception ignored) {
+                            }
+                            Toast.makeText(UploadModuleActivity.this, msg, Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        try {
+                            String rawText = extractGeminiText(response.body());
+                            if (rawText == null || rawText.trim().isEmpty()) {
+                                Toast.makeText(UploadModuleActivity.this,
+                                        "AI returned an empty response. Try again.", Toast.LENGTH_LONG).show();
+                                return;
+                            }
+
+                            rawText = rawText.replaceAll("```json", "").replaceAll("```", "").trim();
+
+                            JsonArray questionsJson = JsonParser.parseString(rawText).getAsJsonArray();
+                            ArrayList<String[]> questions = new ArrayList<>();
+                            List<Question> questionEntities = new ArrayList<>();
+                            for (JsonElement el : questionsJson) {
+                                JsonObject q = el.getAsJsonObject();
+                                String questionText = q.get("question").getAsString();
+                                String optionA = q.get("optionA").getAsString();
+                                String optionB = q.get("optionB").getAsString();
+                                String optionC = q.get("optionC").getAsString();
+                                String optionD = q.get("optionD").getAsString();
+                                String correctAnswer = q.get("correctAnswer").getAsString();
+
+                                questions.add(new String[]{
+                                        questionText,
+                                        optionA,
+                                        optionB,
+                                        optionC,
+                                        optionD,
+                                        correctAnswer
+                                });
+                            }
+
+                            // Persist generated quiz/questions for reuse in other features (e.g., AR deck selection)
+                            String userId = FirebaseAuth.getInstance().getCurrentUser() != null
+                                    ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+                            if (userId != null) {
+                                String quizId = IdUtil.generateId("quiz");
+                                Quiz quiz = new Quiz(userId,
+                                        subject + " Quiz",
+                                        "AI generated quiz",
+                                        questions.size(),
+                                        60.0,
+                                        subject,
+                                        3);
+                                quiz.setQuizId(quizId);
+
+                                for (int i = 0; i < questions.size(); i++) {
+                                    String[] q = questions.get(i);
+                                    Question qe = new Question(quizId, q[0], q[1], q[2], q[3], q[4], q[5], i + 1);
+                                    qe.setQuestionId(IdUtil.generateId("question"));
+                                    questionEntities.add(qe);
+                                }
+
+                                new QuizRepository(UploadModuleActivity.this).createQuiz(quiz, userId);
+                                new QuestionRepository(UploadModuleActivity.this).createAllQuestions(questionEntities);
+                            }
+
+                            Intent intent = new Intent(UploadModuleActivity.this, QuizTakeActivity.class);
+                            intent.putExtra(QuizTakeActivity.EXTRA_SUBJECT, subject);
+                            intent.putParcelableArrayListExtra(QuizTakeActivity.EXTRA_QUESTIONS,
+                                    toParcelableList(questions));
+                            startActivity(intent);
+
+                        } catch (Exception e) {
+                            Toast.makeText(UploadModuleActivity.this,
+                                    "Failed to parse quiz. Try again.", Toast.LENGTH_LONG).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<JsonObject> call, Throwable t) {
+                        setLoading(false, "");
+                        String message = t != null && t.getMessage() != null ? t.getMessage() : "Unknown error";
+                        Toast.makeText(UploadModuleActivity.this, "Network error: " + message, Toast.LENGTH_LONG).show();
+                    }
+                });
+    }
+
+    private static String extractGeminiText(JsonObject body) {
+        if (body == null) return null;
+        JsonArray candidates = body.getAsJsonArray("candidates");
+        if (candidates == null || candidates.size() == 0) return null;
+        JsonObject candidate0 = candidates.get(0).getAsJsonObject();
+        if (candidate0 == null) return null;
+        JsonObject content = candidate0.getAsJsonObject("content");
+        if (content == null) return null;
+        JsonArray parts = content.getAsJsonArray("parts");
+        if (parts == null || parts.size() == 0) return null;
+        JsonObject part0 = parts.get(0).getAsJsonObject();
+        if (part0 == null || part0.get("text") == null) return null;
+        return part0.get("text").getAsString();
     }
 
     private ArrayList<android.os.Bundle> toParcelableList(ArrayList<String[]> questions) {

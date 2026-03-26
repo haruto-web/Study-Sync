@@ -28,6 +28,18 @@ public class UserProfile {
     public int totalStudyMinutes;
     public double averageQuizScore;
 
+    // Consent + onboarding (versioned)
+    public boolean termsAccepted;
+    public long termsAcceptedAt;
+    public int termsVersion;
+    public boolean personalizationEnabled;
+
+    public String gradeLevel;
+    public String goal;
+    public String subjectsCsv;
+    public String topicsOfInterestCsv;
+    public int weeklyStudyTargetMinutes;
+
     // Constructors
     public UserProfile() {
         this.userId = ""; 
@@ -44,6 +56,17 @@ public class UserProfile {
         this.totalTasksCompleted = 0;
         this.totalStudyMinutes = 0;
         this.averageQuizScore = 0.0;
+
+        this.termsAccepted = false;
+        this.termsAcceptedAt = 0L;
+        this.termsVersion = 0;
+        this.personalizationEnabled = false;
+
+        this.gradeLevel = null;
+        this.goal = null;
+        this.subjectsCsv = null;
+        this.topicsOfInterestCsv = null;
+        this.weeklyStudyTargetMinutes = 0;
     }
 
     // Getters
@@ -61,6 +84,17 @@ public class UserProfile {
     public int getTotalStudyMinutes() { return totalStudyMinutes; }
     public double getAverageQuizScore() { return averageQuizScore; }
 
+    public boolean isTermsAccepted() { return termsAccepted; }
+    public long getTermsAcceptedAt() { return termsAcceptedAt; }
+    public int getTermsVersion() { return termsVersion; }
+    public boolean isPersonalizationEnabled() { return personalizationEnabled; }
+
+    public String getGradeLevel() { return gradeLevel; }
+    public String getGoal() { return goal; }
+    public String getSubjectsCsv() { return subjectsCsv; }
+    public String getTopicsOfInterestCsv() { return topicsOfInterestCsv; }
+    public int getWeeklyStudyTargetMinutes() { return weeklyStudyTargetMinutes; }
+
     // Setters
     public void setUserId(@NonNull String userId) { this.userId = userId; }
     public void setEmail(String email) { this.email = email; }
@@ -74,4 +108,15 @@ public class UserProfile {
     public void setAverageQuizScore(double averageQuizScore) { this.averageQuizScore = averageQuizScore; }
     public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
     public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
+
+    public void setTermsAccepted(boolean termsAccepted) { this.termsAccepted = termsAccepted; }
+    public void setTermsAcceptedAt(long termsAcceptedAt) { this.termsAcceptedAt = termsAcceptedAt; }
+    public void setTermsVersion(int termsVersion) { this.termsVersion = termsVersion; }
+    public void setPersonalizationEnabled(boolean personalizationEnabled) { this.personalizationEnabled = personalizationEnabled; }
+
+    public void setGradeLevel(String gradeLevel) { this.gradeLevel = gradeLevel; }
+    public void setGoal(String goal) { this.goal = goal; }
+    public void setSubjectsCsv(String subjectsCsv) { this.subjectsCsv = subjectsCsv; }
+    public void setTopicsOfInterestCsv(String topicsOfInterestCsv) { this.topicsOfInterestCsv = topicsOfInterestCsv; }
+    public void setWeeklyStudyTargetMinutes(int weeklyStudyTargetMinutes) { this.weeklyStudyTargetMinutes = weeklyStudyTargetMinutes; }
 }

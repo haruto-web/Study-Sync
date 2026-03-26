@@ -85,6 +85,9 @@ dependencies {
     // PDF Viewer
     implementation(libs.androidx.pdf)
 
+    // PDF text extraction
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

@@ -3,6 +3,7 @@ package com.example.studysync_project.ui.quiz;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.RadioButton;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -42,6 +43,10 @@ public class QuizTakeActivity extends AppCompatActivity {
         showQuestion(0);
 
         binding.btnNext.setOnClickListener(v -> {
+            if (!hasSelectedAnswer()) {
+                Toast.makeText(this, "Select an answer to continue", Toast.LENGTH_SHORT).show();
+                return;
+            }
             saveAnswer();
             if (currentIndex < questions.size() - 1) {
                 showQuestion(currentIndex + 1);
@@ -85,6 +90,11 @@ public class QuizTakeActivity extends AppCompatActivity {
             if (labels[i].equals(userAnswers[index])) rb.setChecked(true);
         }
 
+        // Require an answer before moving forward
+        binding.btnNext.setEnabled(hasSelectedAnswer());
+        binding.rgOptions.setOnCheckedChangeListener((group, checkedId) ->
+                binding.btnNext.setEnabled(checkedId != -1));
+
         binding.btnPrevious.setEnabled(index > 0);
         binding.btnNext.setText(index == questions.size() - 1 ? "Submit" : "Next");
     }
@@ -118,7 +128,20 @@ public class QuizTakeActivity extends AppCompatActivity {
         intent.putExtra(QuizResultActivity.EXTRA_SUBJECT, subject);
         intent.putStringArrayListExtra(QuizResultActivity.EXTRA_WRONG_QUESTIONS, wrongQuestions);
         intent.putParcelableArrayListExtra(QuizResultActivity.EXTRA_QUESTIONS, questions);
+        intent.putStringArrayListExtra(QuizResultActivity.EXTRA_USER_ANSWERS, toStringArrayList(userAnswers));
         startActivity(intent);
         finish();
+    }
+
+    private boolean hasSelectedAnswer() {
+        int selectedId = binding.rgOptions.getCheckedRadioButtonId();
+        return selectedId != -1;
+    }
+
+    private static ArrayList<String> toStringArrayList(String[] arr) {
+        ArrayList<String> list = new ArrayList<>();
+        if (arr == null) return list;
+        for (String s : arr) list.add(s);
+        return list;
     }
 }

@@ -3,7 +3,10 @@ package com.example.studysync_project.utils;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import java.io.IOException;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Retrofit;
@@ -12,18 +15,41 @@ import retrofit2.http.Body;
 import retrofit2.http.POST;
 import retrofit2.http.Query;
 
+import java.util.concurrent.TimeUnit;
+
 public class GeminiApiClient {
 
     private static final String BASE_URL = "https://generativelanguage.googleapis.com/";
     private static final String API_KEY = com.example.studysync_project.BuildConfig.GEMINI_API_KEY;
     private static GeminiService service;
 
+        /**
+         * Model fallback order: when the first model is rate-limited or returns transient 5xx errors,
+         * the client will retry with the next model.
+         */
+        private static final String[] MODEL_FAILOVER_ORDER = new String[]{
+                "gemini-2.5-flash",
+                "gemini-2.0-flash"
+        };
+
+            /**
+             * Some environments/keys only expose stable v1 endpoints, others use v1beta.
+             * We'll attempt both when we hit 404/429/5xx.
+             */
+            private static final String[] API_VERSION_FAILOVER_ORDER = new String[]{
+                    "v1beta"
+            };
+
     private static GeminiService getService() {
         if (service == null) {
             HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
             logging.setLevel(HttpLoggingInterceptor.Level.BODY);
             OkHttpClient client = new OkHttpClient.Builder()
+                    .addInterceptor(new ModelFailoverInterceptor(API_VERSION_FAILOVER_ORDER, MODEL_FAILOVER_ORDER))
                     .addInterceptor(logging)
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
                     .build();
             service = new Retrofit.Builder()
                     .baseUrl(BASE_URL)
@@ -97,5 +123,99 @@ public class GeminiApiClient {
                 @Query("key") String apiKey,
                 @Body JsonObject body
         );
+    }
+
+    /**
+     * Retries the same request against alternate models when the API returns transient failures.
+     * This helps when a specific model is temporarily rate-limited or overloaded.
+     */
+    private static final class ModelFailoverInterceptor implements okhttp3.Interceptor {
+        private static final int[] RETRY_STATUS_CODES = new int[]{404, 429, 500, 502, 503, 504};
+        private final String[] apiVersions;
+        private final String[] models;
+
+        private ModelFailoverInterceptor(String[] apiVersions, String[] models) {
+            this.apiVersions = apiVersions != null ? apiVersions : new String[0];
+            this.models = models != null ? models : new String[0];
+        }
+
+        @Override
+        public Response intercept(Chain chain) throws IOException {
+            Request originalRequest = chain.request();
+
+            // If the URL doesn't match the expected model path, just proceed.
+            String originalUrl = originalRequest.url().toString();
+
+            String matchedVersion = null;
+            int modelsIndex = -1;
+            for (String v : apiVersions) {
+                String segment = "/" + v + "/models/";
+                int idx = originalUrl.indexOf(segment);
+                if (idx >= 0) {
+                    matchedVersion = v;
+                    modelsIndex = idx;
+                    break;
+                }
+            }
+
+            if (matchedVersion == null || modelsIndex < 0 || models.length == 0) {
+                return chain.proceed(originalRequest);
+            }
+
+            String modelsSegment = "/" + matchedVersion + "/models/";
+            int modelStart = modelsIndex + modelsSegment.length();
+            int modelEnd = originalUrl.indexOf(":generateContent", modelStart);
+            if (modelStart < 0 || modelEnd < 0 || modelEnd <= modelStart) {
+                return chain.proceed(originalRequest);
+            }
+
+            // Try each API version + model in order.
+            Response lastResponse = null;
+            for (int v = 0; v < apiVersions.length; v++) {
+                String apiVersion = apiVersions[v];
+                for (int m = 0; m < models.length; m++) {
+                    String model = models[m];
+
+                    String attemptUrl = originalUrl;
+                    // swap api version segment if needed
+                    if (!apiVersion.equals(matchedVersion)) {
+                        attemptUrl = attemptUrl.replace(modelsSegment, "/" + apiVersion + "/models/");
+                    }
+
+                    // recompute modelStart/modelEnd for the attemptUrl
+                    String attemptModelsSegment = "/" + apiVersion + "/models/";
+                    int attemptModelsIndex = attemptUrl.indexOf(attemptModelsSegment);
+                    int attemptModelStart = attemptModelsIndex >= 0 ? attemptModelsIndex + attemptModelsSegment.length() : -1;
+                    int attemptModelEnd = attemptModelStart >= 0 ? attemptUrl.indexOf(":generateContent", attemptModelStart) : -1;
+                    if (attemptModelStart < 0 || attemptModelEnd < 0 || attemptModelEnd <= attemptModelStart) {
+                        continue;
+                    }
+
+                    attemptUrl = attemptUrl.substring(0, attemptModelStart) + model + attemptUrl.substring(attemptModelEnd);
+                    Request attemptRequest = originalRequest.newBuilder().url(attemptUrl).build();
+
+                    if (lastResponse != null) {
+                        lastResponse.close();
+                    }
+
+                    lastResponse = chain.proceed(attemptRequest);
+
+                    boolean lastAttempt = (v == apiVersions.length - 1) && (m == models.length - 1);
+                    if (!shouldRetry(lastResponse.code()) || lastAttempt) {
+                        return lastResponse;
+                    }
+                }
+            }
+
+            // Should not be reached, but return the last response if it is.
+            return lastResponse != null ? lastResponse : chain.proceed(originalRequest);
+        }
+
+        private static boolean shouldRetry(int code) {
+            for (int retryCode : RETRY_STATUS_CODES) {
+                if (retryCode == code) return true;
+            }
+            return false;
+        }
     }
 }

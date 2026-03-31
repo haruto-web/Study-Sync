@@ -15,8 +15,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.studysync_project.BuildConfig;
 import com.example.studysync_project.data.model.Question;
 import com.example.studysync_project.data.model.Quiz;
+import com.example.studysync_project.data.model.StudyModule;
 import com.example.studysync_project.data.repository.QuestionRepository;
 import com.example.studysync_project.data.repository.QuizRepository;
+import com.example.studysync_project.data.repository.StudyModuleRepository;
 import com.example.studysync_project.databinding.ActivityUploadModuleBinding;
 import com.example.studysync_project.utils.GeminiApiClient;
 import com.example.studysync_project.utils.IdUtil;
@@ -37,6 +39,9 @@ import retrofit2.Response;
 
 public class UploadModuleActivity extends AppCompatActivity {
 
+    public static final String EXTRA_MODULE_ID = "extra_module_id";
+    public static final String EXTRA_MODULE_SOURCE_TYPE = "extra_module_source_type";
+    public static final String EXTRA_MODULE_SOURCE_REF = "extra_module_source_ref";
     public static final String EXTRA_READY_MODULE_TEXT = "extra_ready_module_text";
     public static final String EXTRA_READY_MODULE_TITLE = "extra_ready_module_title";
     public static final String EXTRA_READY_MODULE_SUBJECT = "extra_ready_module_subject";
@@ -53,8 +58,12 @@ public class UploadModuleActivity extends AppCompatActivity {
                 binding.tvFileName.setText(getFileName(uri));
             });
     private String extractedText;
+    private String providedModuleId;
     private String providedModuleText;
     private String providedModuleTitle;
+    private String providedModuleSourceType;
+    private String providedModuleSourceRef;
+    private StudyModuleRepository studyModuleRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,10 +71,15 @@ public class UploadModuleActivity extends AppCompatActivity {
         binding = ActivityUploadModuleBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        studyModuleRepository = new StudyModuleRepository(this);
+
         binding.toolbar.setNavigationOnClickListener(v -> finish());
 
+        providedModuleId = getIntent().getStringExtra(EXTRA_MODULE_ID);
         providedModuleText = getIntent().getStringExtra(EXTRA_READY_MODULE_TEXT);
         providedModuleTitle = getIntent().getStringExtra(EXTRA_READY_MODULE_TITLE);
+        providedModuleSourceType = getIntent().getStringExtra(EXTRA_MODULE_SOURCE_TYPE);
+        providedModuleSourceRef = getIntent().getStringExtra(EXTRA_MODULE_SOURCE_REF);
         String providedSubject = getIntent().getStringExtra(EXTRA_READY_MODULE_SUBJECT);
         int providedCount = getIntent().getIntExtra(EXTRA_READY_MODULE_QUESTION_COUNT, 10);
 
@@ -127,10 +141,18 @@ public class UploadModuleActivity extends AppCompatActivity {
         String finalSubject = subject;
 
         if (usingProvidedText) {
+            String moduleContent = normalizeForStorage(providedModuleText);
+            if (moduleContent.isEmpty()) {
+                Toast.makeText(this, "Module content is empty", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String moduleTitle = resolveModuleTitle(null);
+            String moduleId = upsertStudyModule(moduleContent, finalSubject, moduleTitle);
+            extractedText = toAiPromptText(moduleContent);
+
             setLoading(true, "AI is analyzing your module...");
-            String normalized = providedModuleText.trim().replaceAll("\\s+", " ");
-            extractedText = normalized.length() > 8000 ? normalized.substring(0, 8000) : normalized;
-            callGemini(extractedText, finalSubject, finalCount);
+            callGemini(extractedText, finalSubject, finalCount, moduleId, moduleTitle);
             return;
         }
 
@@ -147,16 +169,26 @@ public class UploadModuleActivity extends AppCompatActivity {
                     return;
                 }
 
-                String normalized = text.trim().replaceAll("\\s+", " ");
-                extractedText = normalized.length() > 8000 ? normalized.substring(0, 8000) : normalized;
+                String moduleContent = normalizeForStorage(text);
+                String sourceName = getFileName(selectedFileUri);
+                String moduleTitle = resolveModuleTitle(sourceName);
+                String moduleId = upsertStudyModule(moduleContent, finalSubject, sourceName);
+                extractedText = toAiPromptText(moduleContent);
+
                 setLoading(true, "AI is analyzing your module...");
-                callGemini(extractedText, finalSubject, finalCount);
+                callGemini(extractedText, finalSubject, finalCount, moduleId, moduleTitle);
             });
         });
         executor.shutdown();
     }
 
-    private void callGemini(String moduleText, String subject, int questionCount) {
+    private void callGemini(
+            String moduleText,
+            String subject,
+            int questionCount,
+            String moduleId,
+            String sourceModuleTitle
+    ) {
         GeminiApiClient.generateQuiz(moduleText, subject, questionCount)
                 .enqueue(new Callback<JsonObject>() {
                     @Override
@@ -226,16 +258,25 @@ public class UploadModuleActivity extends AppCompatActivity {
                             // Persist generated quiz/questions for reuse in other features (e.g., AR deck selection)
                             String userId = FirebaseAuth.getInstance().getCurrentUser() != null
                                     ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+                            String savedQuizId = null;
                             if (userId != null) {
                                 String quizId = IdUtil.generateId("quiz");
+                                savedQuizId = quizId;
+
+                                String cleanTitle = sourceModuleTitle != null ? sourceModuleTitle.trim() : "";
+                                if (cleanTitle.isEmpty()) {
+                                    cleanTitle = subject + " Module";
+                                }
+
                                 Quiz quiz = new Quiz(userId,
-                                        subject + " Quiz",
-                                        "AI generated quiz",
+                                        cleanTitle + " Quiz",
+                                        "AI generated quiz from a saved module",
                                         questions.size(),
                                         60.0,
                                         subject,
                                         3);
                                 quiz.setQuizId(quizId);
+                                quiz.setModuleId(moduleId);
 
                                 for (int i = 0; i < questions.size(); i++) {
                                     String[] q = questions.get(i);
@@ -250,6 +291,9 @@ public class UploadModuleActivity extends AppCompatActivity {
 
                             Intent intent = new Intent(UploadModuleActivity.this, QuizTakeActivity.class);
                             intent.putExtra(QuizTakeActivity.EXTRA_SUBJECT, subject);
+                            if (savedQuizId != null) {
+                                intent.putExtra(QuizTakeActivity.EXTRA_QUIZ_ID, savedQuizId);
+                            }
                             intent.putParcelableArrayListExtra(QuizTakeActivity.EXTRA_QUESTIONS,
                                     toParcelableList(questions));
                             startActivity(intent);
@@ -303,6 +347,100 @@ public class UploadModuleActivity extends AppCompatActivity {
         binding.layoutLoading.setVisibility(loading ? View.VISIBLE : View.GONE);
         binding.btnGenerate.setEnabled(!loading);
         binding.tvLoadingStatus.setText(message);
+    }
+
+    private String upsertStudyModule(String contentText, String subject, String sourceRefCandidate) {
+        String userId = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+
+        if (userId == null) {
+            return null;
+        }
+
+        String moduleId = providedModuleId != null && !providedModuleId.trim().isEmpty()
+                ? providedModuleId
+                : IdUtil.generateId("module");
+
+        String moduleTitle = resolveModuleTitle(sourceRefCandidate);
+        String sourceType = resolveModuleSourceType();
+        String sourceRef = resolveModuleSourceRef(sourceRefCandidate);
+
+        StudyModule module = new StudyModule(
+                userId,
+                moduleTitle,
+                subject,
+                subject,
+                "Saved module for review and quiz practice.",
+                contentText,
+                sourceType,
+                sourceRef
+        );
+        module.setModuleId(moduleId);
+
+        studyModuleRepository.upsertStudyModule(module, userId);
+        return moduleId;
+    }
+
+    private String resolveModuleTitle(String fallbackTitle) {
+        if (providedModuleTitle != null && !providedModuleTitle.trim().isEmpty()) {
+            return providedModuleTitle.trim();
+        }
+        if (fallbackTitle != null && !fallbackTitle.trim().isEmpty()) {
+            return fallbackTitle.trim();
+        }
+        if (selectedFileUri != null) {
+            String fileName = getFileName(selectedFileUri);
+            if (fileName != null && !fileName.trim().isEmpty()) {
+                return fileName.trim();
+            }
+        }
+        return "Study Module";
+    }
+
+    private String resolveModuleSourceType() {
+        if (providedModuleSourceType != null && !providedModuleSourceType.trim().isEmpty()) {
+            return providedModuleSourceType.trim();
+        }
+        if (selectedFileUri != null) {
+            return "UPLOADED_FILE";
+        }
+        if (providedModuleText != null && !providedModuleText.trim().isEmpty()) {
+            return "READY_MADE";
+        }
+        return "MANUAL";
+    }
+
+    private String resolveModuleSourceRef(String fallbackRef) {
+        if (providedModuleSourceRef != null && !providedModuleSourceRef.trim().isEmpty()) {
+            return providedModuleSourceRef.trim();
+        }
+        if (fallbackRef != null && !fallbackRef.trim().isEmpty()) {
+            return fallbackRef.trim();
+        }
+        if (selectedFileUri != null) {
+            return selectedFileUri.toString();
+        }
+        return "";
+    }
+
+    private String normalizeForStorage(String text) {
+        if (text == null) return "";
+        String normalized = text.replace("\r\n", "\n")
+                .replace('\r', '\n')
+                .trim()
+                .replaceAll("\\n{3,}", "\n\n");
+        return truncate(normalized, 20000);
+    }
+
+    private String toAiPromptText(String text) {
+        if (text == null) return "";
+        return truncate(text.replaceAll("\\s+", " "), 8000);
+    }
+
+    private String truncate(String text, int maxLen) {
+        if (text == null) return "";
+        if (text.length() <= maxLen) return text;
+        return text.substring(0, maxLen);
     }
 
     private String getFileName(Uri uri) {

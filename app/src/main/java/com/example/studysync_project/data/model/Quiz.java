@@ -28,6 +28,7 @@ public class Quiz {
 
     public String subject;  // Math, Science, History, etc.
     public int difficulty;  // 1-5 scale
+    public String moduleId; // Optional link to source StudyModule
     public boolean isArchived;
 
     // Constructors
@@ -45,6 +46,7 @@ public class Quiz {
         this.passingScore = passingScore;
         this.subject = subject;
         this.difficulty = difficulty;
+        this.moduleId = null;
         this.createdAt = System.currentTimeMillis();
         this.updatedAt = System.currentTimeMillis();
         this.isArchived = false;
@@ -62,6 +64,7 @@ public class Quiz {
     public long getUpdatedAt() { return updatedAt; }
     public String getSubject() { return subject; }
     public int getDifficulty() { return difficulty; }
+    public String getModuleId() { return moduleId; }
     public boolean isArchived() { return isArchived; }
 
     // Setters
@@ -75,5 +78,6 @@ public class Quiz {
     public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
     public void setSubject(String subject) { this.subject = subject; }
     public void setDifficulty(int difficulty) { this.difficulty = difficulty; }
+    public void setModuleId(String moduleId) { this.moduleId = moduleId; }
     public void setArchived(boolean archived) { isArchived = archived; }
 }

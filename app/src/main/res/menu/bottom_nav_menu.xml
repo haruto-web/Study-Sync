@@ -15,7 +15,7 @@
     <item
         android:id="@+id/quizFragment"
         android:icon="@android:drawable/ic_menu_help"
-        android:title="Quiz" />
+        android:title="Study" />
     <item
         android:id="@+id/arFragment"
         android:icon="@android:drawable/ic_menu_camera"

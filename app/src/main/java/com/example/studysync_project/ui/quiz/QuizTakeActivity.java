@@ -15,10 +15,12 @@ public class QuizTakeActivity extends AppCompatActivity {
 
     public static final String EXTRA_QUESTIONS = "questions";
     public static final String EXTRA_SUBJECT = "subject";
+    public static final String EXTRA_QUIZ_ID = "quiz_id";
 
     private ActivityQuizTakeBinding binding;
     private ArrayList<Bundle> questions;
     private String subject;
+    private String quizId;
     private int currentIndex = 0;
     private String[] userAnswers;
 
@@ -29,6 +31,7 @@ public class QuizTakeActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         subject = getIntent().getStringExtra(EXTRA_SUBJECT);
+        quizId = getIntent().getStringExtra(EXTRA_QUIZ_ID);
         questions = getIntent().getParcelableArrayListExtra(EXTRA_QUESTIONS);
 
         if (questions == null || questions.isEmpty()) {
@@ -126,6 +129,7 @@ public class QuizTakeActivity extends AppCompatActivity {
         intent.putExtra(QuizResultActivity.EXTRA_SCORE, correct);
         intent.putExtra(QuizResultActivity.EXTRA_TOTAL, questions.size());
         intent.putExtra(QuizResultActivity.EXTRA_SUBJECT, subject);
+        intent.putExtra(QuizResultActivity.EXTRA_QUIZ_ID, quizId);
         intent.putStringArrayListExtra(QuizResultActivity.EXTRA_WRONG_QUESTIONS, wrongQuestions);
         intent.putParcelableArrayListExtra(QuizResultActivity.EXTRA_QUESTIONS, questions);
         intent.putStringArrayListExtra(QuizResultActivity.EXTRA_USER_ANSWERS, toStringArrayList(userAnswers));

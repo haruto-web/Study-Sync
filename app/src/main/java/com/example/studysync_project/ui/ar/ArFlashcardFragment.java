@@ -66,6 +66,7 @@ public class ArFlashcardFragment extends Fragment {
     private boolean installRequested;
     private boolean cameraPermissionRequested;
     private boolean sceneTouchListenerAttached;
+    private boolean controlsExpanded = true;
 
     private ArFlashcardViewModel viewModel;
     private List<Quiz> availableQuizzes = new ArrayList<>();
@@ -95,7 +96,12 @@ public class ArFlashcardFragment extends Fragment {
 
         setupQuizSelector();
         binding.btnRetryAr.setOnClickListener(v -> retryArStartup());
-        binding.btnArFallback.setOnClickListener(v -> navigateToQuizMode());
+        binding.btnArFallback.setOnClickListener(v -> navigateToStandardFlashcards());
+        binding.btnToggleArControls.setOnClickListener(v -> {
+            controlsExpanded = !controlsExpanded;
+            applyArControlPanelState();
+        });
+        applyArControlPanelState();
 
         binding.btnClearAr.setOnClickListener(v -> {
             if (arSceneView == null) {
@@ -164,7 +170,10 @@ public class ArFlashcardFragment extends Fragment {
             attachSceneTouchListenerIfNeeded();
             arAvailable = true;
             binding.layoutArUnavailable.setVisibility(View.GONE);
+            binding.cardArInstruction.setVisibility(View.VISIBLE);
+            binding.cardArControls.setVisibility(View.VISIBLE);
             binding.arSceneView.setVisibility(View.VISIBLE);
+            applyArControlPanelState();
         } catch (UnavailableArcoreNotInstalledException e) {
             showArUnavailable(getString(R.string.ar_install_required));
         } catch (UnavailableApkTooOldException | UnavailableSdkTooOldException e) {
@@ -209,7 +218,7 @@ public class ArFlashcardFragment extends Fragment {
         sceneTouchListenerAttached = true;
     }
 
-    private void navigateToQuizMode() {
+    private void navigateToStandardFlashcards() {
         if (!isAdded()) {
             return;
         }
@@ -220,7 +229,7 @@ public class ArFlashcardFragment extends Fragment {
         try {
             NavHostFragment.findNavController(this).navigate(R.id.quizFragment);
         } catch (Exception e) {
-            Toast.makeText(requireContext(), "Open the Quiz tab to continue.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.ar_open_standard_flashcards_hint), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -235,6 +244,16 @@ public class ArFlashcardFragment extends Fragment {
             return e.getClass().getSimpleName();
         }
         return message;
+    }
+
+    private void applyArControlPanelState() {
+        if (binding == null) {
+            return;
+        }
+        binding.layoutArControlsBody.setVisibility(controlsExpanded ? View.VISIBLE : View.GONE);
+        binding.btnToggleArControls.setText(
+                controlsExpanded ? R.string.ar_hide_controls : R.string.ar_show_controls
+        );
     }
 
     private void placeFlashcard(HitResult hitResult, String text) {
@@ -351,6 +370,8 @@ public class ArFlashcardFragment extends Fragment {
         arAvailable = false;
         binding.layoutArUnavailable.setVisibility(View.VISIBLE);
         binding.tvArUnavailableReason.setText(reason);
+        binding.cardArInstruction.setVisibility(View.GONE);
+        binding.cardArControls.setVisibility(View.GONE);
         binding.arSceneView.setVisibility(View.GONE);
     }
 

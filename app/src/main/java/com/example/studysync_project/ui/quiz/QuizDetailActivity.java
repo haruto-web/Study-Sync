@@ -10,6 +10,7 @@ import com.example.studysync_project.data.model.Quiz;
 import com.example.studysync_project.data.model.QuizAttempt;
 import com.example.studysync_project.data.repository.QuestionRepository;
 import com.example.studysync_project.data.repository.QuizAttemptRepository;
+import com.example.studysync_project.data.repository.QuizRepository;
 import com.example.studysync_project.databinding.ActivityQuizDetailBinding;
 import com.example.studysync_project.utils.AppExecutors;
 import com.example.studysync_project.utils.IdUtil;
@@ -36,6 +37,7 @@ public class QuizDetailActivity extends AppCompatActivity {
     private long startTime;
     private QuestionRepository questionRepository;
     private QuizAttemptRepository quizAttemptRepository;
+    private QuizRepository quizRepository;
 
     public static final String EXTRA_QUIZ_ID = "quiz_id";
 
@@ -63,6 +65,7 @@ public class QuizDetailActivity extends AppCompatActivity {
 
         questionRepository = new QuestionRepository(this);
         quizAttemptRepository = new QuizAttemptRepository(this);
+        quizRepository = new QuizRepository(this);
 
         startTime = System.currentTimeMillis();
 
@@ -73,8 +76,10 @@ public class QuizDetailActivity extends AppCompatActivity {
 
     private void loadQuizData() {
         AppExecutors.diskIO().execute(() -> {
+            Quiz loadedQuiz = quizRepository.getQuizByIdSync(quizId);
             List<Question> loaded = questionRepository.getQuestionsForQuizSync(quizId);
             runOnUiThread(() -> {
+                this.quiz = loadedQuiz;
                 this.questions = loaded != null ? loaded : new ArrayList<>();
                 if (questions.isEmpty()) {
                     Toast.makeText(this, "No questions found for this quiz", Toast.LENGTH_SHORT).show();
@@ -163,7 +168,8 @@ public class QuizDetailActivity extends AppCompatActivity {
         }
 
         double scorePercentage = (correctAnswers * 100.0) / questions.size();
-        boolean passed = scorePercentage >= quiz.getPassingScore();
+        double passingScore = quiz != null ? quiz.getPassingScore() : 60.0;
+        boolean passed = scorePercentage >= passingScore;
 
         long timeTaken = System.currentTimeMillis() - startTime;
         int timeTakenMinutes = (int) (timeTaken / 60000);

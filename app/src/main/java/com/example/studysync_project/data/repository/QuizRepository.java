@@ -33,6 +33,10 @@ public class QuizRepository {
         return quizDao.getQuizById(quizId);
     }
 
+    public Quiz getQuizByIdSync(String quizId) {
+        return quizDao.getQuizByIdSync(quizId);
+    }
+
     public void createQuiz(Quiz quiz, String userId) {
         quiz.setUserId(userId);
         AppExecutors.diskIO().execute(() -> quizDao.insertQuiz(quiz));

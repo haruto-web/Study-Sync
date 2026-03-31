@@ -22,7 +22,7 @@
     <fragment
         android:id="@+id/quizFragment"
         android:name="com.example.studysync_project.ui.quiz.QuizFragment"
-        android:label="Quiz" />
+        android:label="Study" />
 
     <fragment
         android:id="@+id/arFragment"

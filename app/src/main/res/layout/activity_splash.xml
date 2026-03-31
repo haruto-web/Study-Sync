@@ -8,18 +8,12 @@
     android:background="@color/splash_bg">
 
     <ImageView
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:src="@mipmap/ic_launcher_round"
-        android:layout_marginBottom="24dp" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="StudySync"
-        android:textSize="36sp"
-        android:textStyle="bold"
-        android:textColor="@color/white" />
+        android:layout_width="220dp"
+        android:layout_height="195dp"
+        android:layout_marginBottom="20dp"
+        android:adjustViewBounds="true"
+        android:contentDescription="StudySync Logo"
+        android:src="@drawable/studysync_logo" />
 
     <TextView
         android:layout_width="wrap_content"

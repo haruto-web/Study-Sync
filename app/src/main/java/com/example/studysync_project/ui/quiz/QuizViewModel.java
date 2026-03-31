@@ -6,7 +6,9 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.example.studysync_project.data.model.Quiz;
+import com.example.studysync_project.data.model.StudyModule;
 import com.example.studysync_project.data.repository.QuizRepository;
+import com.example.studysync_project.data.repository.StudyModuleRepository;
 
 import java.util.List;
 
@@ -16,12 +18,37 @@ import java.util.List;
  */
 public class QuizViewModel extends ViewModel {
     private final QuizRepository quizRepository;
+    private final StudyModuleRepository studyModuleRepository;
+    private LiveData<List<StudyModule>> allStudyModules;
     private LiveData<List<Quiz>> allQuizzes;
     private LiveData<List<Quiz>> quizzesBySubject;
     private LiveData<Integer> quizCount;
 
     public QuizViewModel(Context context) {
         this.quizRepository = new QuizRepository(context);
+        this.studyModuleRepository = new StudyModuleRepository(context);
+    }
+
+    /**
+     * Get all active study modules for user
+     */
+    public LiveData<List<StudyModule>> getAllStudyModulesForUser(String userId) {
+        allStudyModules = studyModuleRepository.getAllStudyModulesForUser(userId);
+        return allStudyModules;
+    }
+
+    /**
+     * Get a single study module
+     */
+    public LiveData<StudyModule> getStudyModuleById(String moduleId) {
+        return studyModuleRepository.getStudyModuleById(moduleId);
+    }
+
+    /**
+     * Sync study modules from Firestore
+     */
+    public void syncStudyModules(String userId) {
+        studyModuleRepository.syncStudyModulesFromFirestore(userId);
     }
 
     /**

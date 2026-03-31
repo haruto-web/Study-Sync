@@ -1,6 +1,7 @@
 package com.example.studysync_project.ui.quiz;
 
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -70,16 +71,19 @@ public class QuizAdapter extends ListAdapter<Quiz, QuizAdapter.QuizViewHolder> {
             binding.tvQuizTitle.setText(quiz.getTitle());
             binding.tvQuizSubject.setText(quiz.getSubject());
             binding.tvQuestionCount.setText(quiz.getTotalQuestions() + " questions");
+
+            boolean linkedToModule = quiz.getModuleId() != null && !quiz.getModuleId().trim().isEmpty();
+            binding.tvQuizModule.setVisibility(linkedToModule ? View.VISIBLE : View.GONE);
             
             // Set difficulty stars (1-5)
-            String difficulty = "";
+            StringBuilder difficulty = new StringBuilder();
             for (int i = 0; i < quiz.getDifficulty(); i++) {
-                difficulty += "★";
+                difficulty.append("★");
             }
             for (int i = quiz.getDifficulty(); i < 5; i++) {
-                difficulty += "☆";
+                difficulty.append("☆");
             }
-            binding.tvDifficulty.setText(difficulty);
+            binding.tvDifficulty.setText(difficulty.toString());
 
             binding.tvPassingScore.setText("Pass: " + (int) quiz.getPassingScore() + "%");
 

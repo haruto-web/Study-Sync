@@ -15,8 +15,15 @@
     <string name="onboarding_topics">Topic interests (comma-separated)</string>
     <string name="onboarding_continue">Continue</string>
 
-    <string name="ar_open_quiz_mode">Open Quiz Mode</string>
+    <string name="ar_open_quiz_mode">Open Standard Flashcards</string>
+    <string name="ar_open_standard_flashcards_hint">Open the Quiz tab to continue.</string>
     <string name="ar_retry">Retry AR</string>
+    <string name="ar_controls_title">AR Controls</string>
+    <string name="ar_hide_controls">Hide controls</string>
+    <string name="ar_show_controls">Show controls</string>
+    <string name="ar_clear_all">Clear all cards</string>
+    <string name="ar_instruction_compact">Scan a flat surface, then tap to place your card.</string>
+    <string name="ar_not_available_title">AR Not Available</string>
     <string name="ar_camera_permission_required">Camera permission is required for AR mode.</string>
     <string name="ar_install_required">Please complete ARCore installation to continue.</string>
     <string name="ar_install_declined">ARCore installation was declined. Tap Retry AR to try again.</string>
@@ -26,4 +33,16 @@
     <string name="home_recommended_title">Recommended Next</string>
     <string name="home_ready_modules_title">Ready-made Modules</string>
     <string name="home_limited_mode_note">Enable personalization to get recommendations.</string>
+
+    <string name="quiz_result_generate_module_button">Generate AI Study Module</string>
+    <string name="quiz_result_generating_module">Generating module...</string>
+    <string name="quiz_result_topic_interest_title">What do you want to focus on?</string>
+    <string name="quiz_result_topic_interest_message">Enter the topic you are currently interested in, and AI will build a module based on this quiz result.</string>
+    <string name="quiz_result_topic_interest_hint">e.g., Quadratic Equations</string>
+    <string name="quiz_result_topic_interest_required">Please enter a topic first.</string>
+    <string name="quiz_result_missing_api_key">Missing GEMINI_API_KEY. Add GEMINI_API_KEY to local.properties and rebuild.</string>
+    <string name="quiz_result_offline">No internet connection. Connect and try again.</string>
+    <string name="quiz_result_module_generation_failed">Could not generate a personalized module right now. Please try again.</string>
+    <string name="quiz_result_module_generation_empty">AI returned an empty module. Please try again.</string>
+    <string name="quiz_result_generated_module_title">AI Personalized Module: %1$s</string>
 </resources>

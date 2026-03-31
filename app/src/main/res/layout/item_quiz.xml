@@ -16,27 +16,34 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Title -->
-        <TextView
-            android:id="@+id/tv_quiz_title"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Quiz Title"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="@color/text_primary" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <!-- Delete Button -->
-        <ImageButton
-            android:id="@+id/btn_delete"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_delete"
-            android:contentDescription="Delete Quiz"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:scaleType="centerInside"
-            android:layout_marginStart="8dp" />
+            <!-- Title -->
+            <TextView
+                android:id="@+id/tv_quiz_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Quiz Title"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary" />
+
+            <!-- Delete Button -->
+            <ImageButton
+                android:id="@+id/btn_delete"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_delete"
+                android:contentDescription="Delete Quiz"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:scaleType="centerInside"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
 
         <!-- Subject -->
         <TextView
@@ -47,6 +54,16 @@
             android:textSize="13sp"
             android:textColor="@color/text_secondary"
             android:layout_marginTop="8dp" />
+
+        <TextView
+            android:id="@+id/tv_quiz_module"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Based on saved module"
+            android:textSize="12sp"
+            android:textColor="@color/primary"
+            android:visibility="gone" />
 
         <!-- Question Count and Difficulty Row -->
         <LinearLayout

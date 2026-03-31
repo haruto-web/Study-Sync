@@ -262,6 +262,8 @@ public class HomeFragment extends Fragment {
         intent.putExtra(UploadModuleActivity.EXTRA_READY_MODULE_TITLE, module.title);
         intent.putExtra(UploadModuleActivity.EXTRA_READY_MODULE_SUBJECT, module.subject);
         intent.putExtra(UploadModuleActivity.EXTRA_READY_MODULE_TEXT, module.content);
+        intent.putExtra(UploadModuleActivity.EXTRA_MODULE_SOURCE_TYPE, "READY_MADE");
+        intent.putExtra(UploadModuleActivity.EXTRA_MODULE_SOURCE_REF, module.id);
         intent.putExtra(UploadModuleActivity.EXTRA_READY_MODULE_QUESTION_COUNT, 10);
         startActivity(intent);
     }
@@ -270,17 +272,6 @@ public class HomeFragment extends Fragment {
         binding.btnLogout.setOnClickListener(v -> showLogoutConfirmation());
         binding.cardAvatar.setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), ProfileActivity.class)));
-        binding.btnStartQuiz.setOnClickListener(v ->
-                startActivity(new Intent(requireContext(), UploadModuleActivity.class)));
-        binding.btnProgress.setOnClickListener(v ->
-                startActivity(new Intent(requireContext(),
-                        com.example.studysync_project.ui.progress.ProgressActivity.class)));
-        binding.btnStudyTimer.setOnClickListener(v -> {
-            if (getActivity() instanceof com.example.studysync_project.MainActivity) {
-                ((com.example.studysync_project.MainActivity) getActivity())
-                        .navigateTo(com.example.studysync_project.R.id.timerFragment);
-            }
-        });
     }
 
     private void showLogoutConfirmation() {

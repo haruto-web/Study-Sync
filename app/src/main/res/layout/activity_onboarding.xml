@@ -45,7 +45,8 @@
                 android:id="@+id/act_grade_level"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="none" />
+                android:completionThreshold="1"
+                android:inputType="text" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -64,7 +65,8 @@
                 android:id="@+id/act_goal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="none" />
+                android:completionThreshold="1"
+                android:inputType="text" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -83,7 +85,8 @@
                 android:id="@+id/act_subject"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="none" />
+                android:completionThreshold="1"
+                android:inputType="text" />
 
         </com.google.android.material.textfield.TextInputLayout>
 

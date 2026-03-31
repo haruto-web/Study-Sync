@@ -15,6 +15,14 @@
     <string name="onboarding_topics">Topic interests (comma-separated)</string>
     <string name="onboarding_continue">Continue</string>
 
+    <string name="ar_open_quiz_mode">Open Quiz Mode</string>
+    <string name="ar_retry">Retry AR</string>
+    <string name="ar_camera_permission_required">Camera permission is required for AR mode.</string>
+    <string name="ar_install_required">Please complete ARCore installation to continue.</string>
+    <string name="ar_install_declined">ARCore installation was declined. Tap Retry AR to try again.</string>
+    <string name="ar_install_check_failed">ARCore install check failed: %1$s</string>
+    <string name="ar_session_not_ready">AR session could not start: %1$s</string>
+
     <string name="home_recommended_title">Recommended Next</string>
     <string name="home_ready_modules_title">Ready-made Modules</string>
     <string name="home_limited_mode_note">Enable personalization to get recommendations.</string>

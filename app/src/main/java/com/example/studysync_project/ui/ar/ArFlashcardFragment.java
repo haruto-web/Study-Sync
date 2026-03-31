@@ -1,6 +1,8 @@
 package com.example.studysync_project.ui.ar;
 
+import android.Manifest;
 import android.graphics.Color;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -12,10 +14,16 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.fragment.NavHostFragment;
 
+import com.example.studysync_project.MainActivity;
+import com.example.studysync_project.R;
 import com.example.studysync_project.data.model.Question;
 import com.example.studysync_project.data.model.Quiz;
 import com.example.studysync_project.databinding.FragmentArBinding;
@@ -25,6 +33,11 @@ import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
 import com.google.ar.core.Session;
 import com.google.ar.core.TrackingState;
+import com.google.ar.core.exceptions.UnavailableApkTooOldException;
+import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
+import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
+import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
+import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.rendering.ViewRenderable;
@@ -38,9 +51,21 @@ import java.util.List;
 public class ArFlashcardFragment extends Fragment {
 
     private final List<AnchorNode> placedNodes = new ArrayList<>();
+    private final ActivityResultLauncher<String> cameraPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted) {
+                    startArIfPossible();
+                } else {
+                    showArUnavailable(getString(R.string.ar_camera_permission_required));
+                }
+            });
+
     private FragmentArBinding binding;
     private ArSceneView arSceneView;
     private boolean arAvailable = false;
+    private boolean installRequested;
+    private boolean cameraPermissionRequested;
+    private boolean sceneTouchListenerAttached;
 
     private ArFlashcardViewModel viewModel;
     private List<Quiz> availableQuizzes = new ArrayList<>();
@@ -69,23 +94,95 @@ public class ArFlashcardFragment extends Fragment {
         }).get(ArFlashcardViewModel.class);
 
         setupQuizSelector();
+        binding.btnRetryAr.setOnClickListener(v -> retryArStartup());
+        binding.btnArFallback.setOnClickListener(v -> navigateToQuizMode());
 
-        ArCoreApk.Availability availability =
-                ArCoreApk.getInstance().checkAvailability(requireContext());
+        binding.btnClearAr.setOnClickListener(v -> {
+            if (arSceneView == null) {
+                Toast.makeText(requireContext(), "AR scene is not ready.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            for (AnchorNode node : placedNodes) {
+                arSceneView.getScene().removeChild(node);
+                if (node.getAnchor() != null) node.getAnchor().detach();
+            }
+            placedNodes.clear();
+            Toast.makeText(requireContext(), "Cleared", Toast.LENGTH_SHORT).show();
+        });
 
+        startArIfPossible();
+    }
+
+    private void startArIfPossible() {
+        if (binding == null || !isAdded()) {
+            return;
+        }
+
+        if (!hasCameraPermission()) {
+            if (!cameraPermissionRequested) {
+                cameraPermissionRequested = true;
+                cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+            } else {
+                showArUnavailable(getString(R.string.ar_camera_permission_required));
+            }
+            return;
+        }
+
+        ArCoreApk.Availability availability = ArCoreApk.getInstance().checkAvailability(requireContext());
         if (availability == ArCoreApk.Availability.UNSUPPORTED_DEVICE_NOT_CAPABLE) {
             showArUnavailable("This device does not support ARCore.");
             return;
         }
 
-        arSceneView = binding.arSceneView;
-        arAvailable = true;
+        if (availability.isTransient()) {
+            binding.getRoot().postDelayed(this::startArIfPossible, 300L);
+            return;
+        }
 
         try {
-            Session session = new Session(requireContext());
-            arSceneView.setupSession(session);
+            ArCoreApk.InstallStatus installStatus =
+                    ArCoreApk.getInstance().requestInstall(requireActivity(), !installRequested);
+            if (installStatus == ArCoreApk.InstallStatus.INSTALL_REQUESTED) {
+                installRequested = true;
+                showArUnavailable(getString(R.string.ar_install_required));
+                return;
+            }
+        } catch (UnavailableUserDeclinedInstallationException e) {
+            showArUnavailable(getString(R.string.ar_install_declined));
+            return;
         } catch (Exception e) {
-            showArUnavailable("AR session could not start: " + e.getMessage());
+            showArUnavailable(getString(R.string.ar_install_check_failed, safeMessage(e)));
+            return;
+        }
+
+        arSceneView = binding.arSceneView;
+        try {
+            if (arSceneView.getSession() == null) {
+                Session session = new Session(requireContext());
+                arSceneView.setupSession(session);
+            }
+            attachSceneTouchListenerIfNeeded();
+            arAvailable = true;
+            binding.layoutArUnavailable.setVisibility(View.GONE);
+            binding.arSceneView.setVisibility(View.VISIBLE);
+        } catch (UnavailableArcoreNotInstalledException e) {
+            showArUnavailable(getString(R.string.ar_install_required));
+        } catch (UnavailableApkTooOldException | UnavailableSdkTooOldException e) {
+            showArUnavailable(getString(R.string.ar_install_required));
+        } catch (UnavailableDeviceNotCompatibleException e) {
+            showArUnavailable("This device does not support ARCore.");
+        } catch (Exception e) {
+            showArUnavailable(getString(R.string.ar_session_not_ready, safeMessage(e)));
+        }
+    }
+
+    private boolean hasCameraPermission() {
+        return ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void attachSceneTouchListenerIfNeeded() {
+        if (sceneTouchListenerAttached || arSceneView == null) {
             return;
         }
 
@@ -109,15 +206,35 @@ public class ArFlashcardFragment extends Fragment {
                 }
             }
         });
+        sceneTouchListenerAttached = true;
+    }
 
-        binding.btnClearAr.setOnClickListener(v -> {
-            for (AnchorNode node : placedNodes) {
-                arSceneView.getScene().removeChild(node);
-                if (node.getAnchor() != null) node.getAnchor().detach();
-            }
-            placedNodes.clear();
-            Toast.makeText(requireContext(), "Cleared", Toast.LENGTH_SHORT).show();
-        });
+    private void navigateToQuizMode() {
+        if (!isAdded()) {
+            return;
+        }
+        if (requireActivity() instanceof MainActivity) {
+            ((MainActivity) requireActivity()).navigateTo(R.id.quizFragment);
+            return;
+        }
+        try {
+            NavHostFragment.findNavController(this).navigate(R.id.quizFragment);
+        } catch (Exception e) {
+            Toast.makeText(requireContext(), "Open the Quiz tab to continue.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void retryArStartup() {
+        cameraPermissionRequested = false;
+        startArIfPossible();
+    }
+
+    private String safeMessage(Exception e) {
+        String message = e.getMessage();
+        if (message == null || message.trim().isEmpty()) {
+            return e.getClass().getSimpleName();
+        }
+        return message;
     }
 
     private void placeFlashcard(HitResult hitResult, String text) {
@@ -231,6 +348,7 @@ public class ArFlashcardFragment extends Fragment {
 
     private void showArUnavailable(String reason) {
         if (binding == null) return;
+        arAvailable = false;
         binding.layoutArUnavailable.setVisibility(View.VISIBLE);
         binding.tvArUnavailableReason.setText(reason);
         binding.arSceneView.setVisibility(View.GONE);
@@ -239,6 +357,9 @@ public class ArFlashcardFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        if (!arAvailable) {
+            startArIfPossible();
+        }
         if (arAvailable && arSceneView != null) {
             try {
                 arSceneView.resume();
@@ -258,6 +379,9 @@ public class ArFlashcardFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         if (arAvailable && arSceneView != null) arSceneView.destroy();
+        arAvailable = false;
+        sceneTouchListenerAttached = false;
+        arSceneView = null;
         binding = null;
     }
 }

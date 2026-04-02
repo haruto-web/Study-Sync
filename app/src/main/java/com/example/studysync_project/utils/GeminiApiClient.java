@@ -117,6 +117,45 @@ public class GeminiApiClient {
         return getService().generateContent(API_KEY, buildRequestBody(prompt));
     }
 
+            /**
+             * Generates a short personalized study module from quiz performance and current learner interest.
+             */
+            public static Call<JsonObject> generatePersonalizedModule(
+                String subject,
+                int score,
+                int total,
+                String wrongTopics,
+                String interestTopic
+            ) {
+            int percent = total > 0 ? (score * 100) / total : 0;
+            String safeSubject = subject != null && !subject.trim().isEmpty() ? subject.trim() : "General";
+            String safeInterest = interestTopic != null && !interestTopic.trim().isEmpty()
+                ? interestTopic.trim() : safeSubject;
+
+            StringBuilder prompt = new StringBuilder();
+            prompt.append("You are an educational tutor. Create a personalized study module for a learner.\n")
+                .append("Quiz subject: ").append(safeSubject).append("\n")
+                .append("Score: ").append(score).append("/").append(total).append(" (").append(percent).append("%)\n")
+                .append("Current topic interest: ").append(safeInterest).append("\n");
+
+            if (wrongTopics != null && !wrongTopics.trim().isEmpty()) {
+                prompt.append("Questions answered incorrectly:\n")
+                    .append(wrongTopics.trim())
+                    .append("\n");
+            }
+
+            prompt.append("Write a practical, student-friendly module between 450 and 650 words with this structure:\n")
+                .append("1) Title\n")
+                .append("2) Why this matters\n")
+                .append("3) Core concepts explained simply\n")
+                .append("4) Common mistakes and how to avoid them\n")
+                .append("5) A short practice checklist\n")
+                .append("Focus strongly on the current topic interest while also addressing weak areas shown by quiz mistakes.\n")
+                .append("Return plain text only. Do not return JSON, markdown code fences, or extra commentary.");
+
+            return getService().generateContent(API_KEY, buildRequestBody(prompt.toString()));
+            }
+
     private interface GeminiService {
         @POST("v1beta/models/gemini-1.5-flash:generateContent")
         Call<JsonObject> generateContent(

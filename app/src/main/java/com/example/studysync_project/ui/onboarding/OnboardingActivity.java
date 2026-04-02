@@ -22,6 +22,7 @@ import java.util.Map;
 public class OnboardingActivity extends AppCompatActivity {
 
     private ActivityOnboardingBinding binding;
+    private boolean isSaving;
 
     private final FirebaseAuth auth = FirebaseAuth.getInstance();
     private final FirebaseFirestore firestore = FirebaseFirestore.getInstance();
@@ -57,6 +58,10 @@ public class OnboardingActivity extends AppCompatActivity {
     }
 
     private void saveAndContinue() {
+        if (isSaving) {
+            return;
+        }
+
         FirebaseUser user = auth.getCurrentUser();
         if (user == null) {
             startActivity(new Intent(this, com.example.studysync_project.ui.auth.LoginActivity.class));
@@ -84,6 +89,8 @@ public class OnboardingActivity extends AppCompatActivity {
             return;
         }
 
+        setSavingState(true);
+
         ConsentManager.setOnboardedV1(this, userId, true);
         ConsentManager.storeOnboarding(this, userId, gradeLevel, goal, subject, topicsCsv);
 
@@ -109,6 +116,15 @@ public class OnboardingActivity extends AppCompatActivity {
 
         // Limited mode or offline: store locally only.
         goToMain();
+    }
+
+    private void setSavingState(boolean saving) {
+        isSaving = saving;
+        binding.btnContinue.setEnabled(!saving);
+        binding.actGradeLevel.setEnabled(!saving);
+        binding.actGoal.setEnabled(!saving);
+        binding.actSubject.setEnabled(!saving);
+        binding.etTopics.setEnabled(!saving);
     }
 
     private void goToMain() {

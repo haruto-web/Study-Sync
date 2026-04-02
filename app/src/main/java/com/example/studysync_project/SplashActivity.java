@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.widget.Toast;
 
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.studysync_project.ui.auth.LoginActivity;
@@ -43,7 +44,7 @@ public class SplashActivity extends AppCompatActivity {
 
             // If offline, fall back to local flags.
             if (!NetworkUtil.isNetworkAvailable(this)) {
-                routeWithLocalFallback(userId);
+                routeWithLocalFallback(userId, false);
                 return;
             }
 
@@ -52,6 +53,10 @@ public class SplashActivity extends AppCompatActivity {
                         Long termsVersion = doc.getLong("termsVersion");
                         Boolean termsAccepted = doc.getBoolean("termsAccepted");
                         Boolean personalizationEnabled = doc.getBoolean("personalizationEnabled");
+                        String gradeLevel = doc.getString("gradeLevel");
+                        String goal = doc.getString("goal");
+                        String subjectsCsv = doc.getString("subjectsCsv");
+                        String topicsCsv = doc.getString("topicsOfInterestCsv");
 
                         int version = termsVersion != null ? termsVersion.intValue() : 0;
                         boolean accepted = termsAccepted != null && termsAccepted;
@@ -59,6 +64,34 @@ public class SplashActivity extends AppCompatActivity {
 
                         // Cache locally for offline behavior.
                         ConsentManager.storeConsent(this, userId, version, accepted, personalization);
+
+                        // Keep local onboarding cache in sync with profile completeness from Firestore.
+                        boolean hasRequiredFirestoreOnboardingData = hasRequiredOnboardingData(gradeLevel, goal, subjectsCsv);
+                        if (hasRequiredFirestoreOnboardingData) {
+                            ConsentManager.storeOnboarding(this, userId, gradeLevel, goal, subjectsCsv, topicsCsv);
+                        }
+
+                        String localGradeLevel = ConsentManager.getStoredGradeLevel(this, userId);
+                        String localGoal = ConsentManager.getStoredGoal(this, userId);
+                        String localSubject = ConsentManager.getStoredSubject(this, userId);
+
+                        boolean shouldShowOnboarding = shouldShowOnboardingForExistingUser(
+                            version,
+                            gradeLevel,
+                            goal,
+                            subjectsCsv,
+                            localGradeLevel,
+                            localGoal,
+                            localSubject
+                        );
+
+                        boolean hasRequiredLocalOnboardingData = hasRequiredOnboardingData(
+                            localGradeLevel,
+                            localGoal,
+                            localSubject
+                        );
+                        boolean isOnboarded = hasRequiredFirestoreOnboardingData || hasRequiredLocalOnboardingData;
+                        ConsentManager.setOnboardedV1(this, userId, isOnboarded);
 
                         if (version < ConsentManager.TERMS_VERSION) {
                             Intent intent = new Intent(this, TermsAndConditionsActivity.class);
@@ -68,25 +101,24 @@ public class SplashActivity extends AppCompatActivity {
                             return;
                         }
 
-                        if (!ConsentManager.isOnboardedV1(this, userId)) {
+                        if (shouldShowOnboarding) {
                             startActivity(new Intent(this, OnboardingActivity.class));
                             finish();
                             return;
                         }
 
-                        startActivity(new Intent(this, MainActivity.class));
-                        finish();
+                        startMain();
                     })
                     .addOnFailureListener(e -> {
                         e.printStackTrace();
                         Toast.makeText(this, "Could not sync profile; using local settings.", Toast.LENGTH_SHORT).show();
-                        routeWithLocalFallback(userId);
+                        routeWithLocalFallback(userId, true);
                     });
 
         }, delayMs);
     }
 
-    private void routeWithLocalFallback(String userId) {
+    private void routeWithLocalFallback(String userId, boolean fromSyncFailure) {
         int localVersion = ConsentManager.getStoredTermsVersion(this, userId);
         if (localVersion < ConsentManager.TERMS_VERSION) {
             Intent intent = new Intent(this, TermsAndConditionsActivity.class);
@@ -97,12 +129,80 @@ public class SplashActivity extends AppCompatActivity {
         }
 
         if (!ConsentManager.isOnboardedV1(this, userId)) {
-            startActivity(new Intent(this, OnboardingActivity.class));
-            finish();
+            String message = fromSyncFailure
+                    ? "Continuing to main while setup sync is unavailable."
+                    : "Offline mode: continuing to main. You can finish setup later.";
+            startMainWithDeferredSetupMessage(message);
             return;
         }
 
+        startMain();
+    }
+
+    private void startMain() {
         startActivity(new Intent(this, MainActivity.class));
         finish();
+    }
+
+    private void startMainWithDeferredSetupMessage(String message) {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.putExtra(MainActivity.EXTRA_DEFERRED_SETUP_MESSAGE, message);
+        startActivity(intent);
+        finish();
+    }
+
+    @VisibleForTesting
+    static boolean shouldShowOnboardingForExistingUser(
+            int termsVersion,
+            String firestoreGradeLevel,
+            String firestoreGoal,
+            String firestoreSubjectsCsv,
+            String localGradeLevel,
+            String localGoal,
+            String localSubject
+    ) {
+        if (termsVersion < ConsentManager.TERMS_VERSION) {
+            return false;
+        }
+        return !isOnboardingComplete(
+                firestoreGradeLevel,
+                firestoreGoal,
+                firestoreSubjectsCsv,
+                localGradeLevel,
+                localGoal,
+                localSubject
+        );
+    }
+
+    @VisibleForTesting
+    static boolean isOnboardingComplete(
+            String firestoreGradeLevel,
+            String firestoreGoal,
+            String firestoreSubjectsCsv,
+            String localGradeLevel,
+            String localGoal,
+            String localSubject
+    ) {
+        boolean hasRequiredFirestoreOnboardingData = hasRequiredOnboardingData(
+                firestoreGradeLevel,
+                firestoreGoal,
+                firestoreSubjectsCsv
+        );
+        boolean hasRequiredLocalOnboardingData = hasRequiredOnboardingData(
+                localGradeLevel,
+                localGoal,
+                localSubject
+        );
+        return hasRequiredFirestoreOnboardingData || hasRequiredLocalOnboardingData;
+    }
+
+    @VisibleForTesting
+    static boolean hasRequiredOnboardingData(String gradeLevel, String goal, String subjectsCsv) {
+        return hasText(gradeLevel) && hasText(goal) && hasText(subjectsCsv);
+    }
+
+    @VisibleForTesting
+    static boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 }

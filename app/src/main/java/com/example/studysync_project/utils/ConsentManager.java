@@ -83,6 +83,10 @@ public final class ConsentManager {
         return prefs(context).getString(key("grade_level", userId), null);
     }
 
+    public static String getStoredGoal(Context context, @NonNull String userId) {
+        return prefs(context).getString(key("goal", userId), null);
+    }
+
     public static String getStoredSubject(Context context, @NonNull String userId) {
         return prefs(context).getString(key("subject", userId), null);
     }

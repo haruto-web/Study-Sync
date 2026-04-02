@@ -61,7 +61,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:lineSpacingExtra="3dp"
-                        android:text="1. Upload your module (PDF, PPT, or TXT)\n2. AI reads and analyzes the content\n3. A short quiz is generated to test your knowledge\n4. After the quiz, AI gives you personalized study tips"
+                        android:text="1. Upload your module (PDF, PPT, or TXT)\n2. The module is saved for review anytime\n3. AI analyzes the module and generates a quiz\n4. After the quiz, AI gives personalized study tips"
                         android:textColor="@color/on_primary_container"
                         android:textSize="13sp" />
                 </LinearLayout>

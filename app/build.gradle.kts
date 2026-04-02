@@ -78,6 +78,7 @@ dependencies {
     implementation(libs.mpandroidchart)
 
     // ARCore + Sceneform (exclude legacy support lib that conflicts with AndroidX)
+    implementation(libs.arcore)
     implementation("com.google.ar.sceneform.ux:sceneform-ux:1.17.1") {
         exclude(group = "com.android.support")
     }

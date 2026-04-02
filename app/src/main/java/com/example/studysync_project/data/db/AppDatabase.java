@@ -11,12 +11,14 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import com.example.studysync_project.data.db.dao.QuestionDao;
 import com.example.studysync_project.data.db.dao.QuizAttemptDao;
 import com.example.studysync_project.data.db.dao.QuizDao;
+import com.example.studysync_project.data.db.dao.StudyModuleDao;
 import com.example.studysync_project.data.db.dao.TaskDao;
 import com.example.studysync_project.data.db.dao.TimerSessionDao;
 import com.example.studysync_project.data.db.dao.UserProfileDao;
 import com.example.studysync_project.data.model.Question;
 import com.example.studysync_project.data.model.Quiz;
 import com.example.studysync_project.data.model.QuizAttempt;
+import com.example.studysync_project.data.model.StudyModule;
 import com.example.studysync_project.data.model.Task;
 import com.example.studysync_project.data.model.TimerSession;
 import com.example.studysync_project.data.model.UserProfile;
@@ -28,13 +30,14 @@ import com.example.studysync_project.data.model.UserProfile;
 @Database(
     entities = {
         UserProfile.class,
+        StudyModule.class,
         Quiz.class,
         Question.class,
         Task.class,
         TimerSession.class,
         QuizAttempt.class
     },
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -57,8 +60,17 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    private static final Migration MIGRATION_2_3 = new Migration(2, 3) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            database.execSQL("CREATE TABLE IF NOT EXISTS `study_modules` (`moduleId` TEXT NOT NULL, `userId` TEXT, `title` TEXT, `subject` TEXT, `topic` TEXT, `description` TEXT, `contentText` TEXT, `sourceType` TEXT, `sourceRef` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `isArchived` INTEGER NOT NULL, PRIMARY KEY(`moduleId`))");
+            database.execSQL("ALTER TABLE quizzes ADD COLUMN moduleId TEXT");
+        }
+    };
+
     // Abstract methods to get DAOs
     public abstract UserProfileDao userProfileDao();
+    public abstract StudyModuleDao studyModuleDao();
     public abstract QuizDao quizDao();
     public abstract QuestionDao questionDao();
     public abstract TaskDao taskDao();
@@ -77,7 +89,7 @@ public abstract class AppDatabase extends RoomDatabase {
                             AppDatabase.class,
                             "studysync_database"
                         )
-                        .addMigrations(MIGRATION_1_2)
+                        .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                         .build();
                 }
             }

@@ -16,10 +16,13 @@ import androidx.navigation.ui.NavigationUI;
 import com.example.studysync_project.databinding.ActivityMainBinding;
 import com.example.studysync_project.ui.auth.LoginActivity;
 import com.example.studysync_project.utils.FirestoreSyncUtil;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 public class MainActivity extends AppCompatActivity {
+
+    public static final String EXTRA_DEFERRED_SETUP_MESSAGE = "extra_deferred_setup_message";
 
     private ActivityMainBinding binding;
     private FirestoreSyncUtil syncUtil;
@@ -57,9 +60,20 @@ public class MainActivity extends AppCompatActivity {
             NavController navController = navHostFragment.getNavController();
             NavigationUI.setupWithNavController(binding.bottomNavigation, navController);
         }
+
+        String deferredSetupMessage = getIntent().getStringExtra(EXTRA_DEFERRED_SETUP_MESSAGE);
+        if (deferredSetupMessage != null && !deferredSetupMessage.trim().isEmpty()) {
+            showDeferredSetupBanner(deferredSetupMessage);
+        }
     }
 
     public void navigateTo(int navItemId) {
         if (binding != null) binding.bottomNavigation.setSelectedItemId(navItemId);
+    }
+
+    private void showDeferredSetupBanner(String message) {
+        Snackbar.make(binding.getRoot(), message, Snackbar.LENGTH_LONG)
+                .setAnchorView(binding.bottomNavigation)
+                .show();
     }
 }

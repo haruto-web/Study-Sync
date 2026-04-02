@@ -5,6 +5,7 @@ import android.content.Context;
 import com.example.studysync_project.data.repository.QuestionRepository;
 import com.example.studysync_project.data.repository.QuizAttemptRepository;
 import com.example.studysync_project.data.repository.QuizRepository;
+import com.example.studysync_project.data.repository.StudyModuleRepository;
 import com.example.studysync_project.data.repository.TaskRepository;
 import com.example.studysync_project.data.repository.TimerRepository;
 import com.example.studysync_project.data.repository.UserRepository;
@@ -18,6 +19,7 @@ public class FirestoreSyncUtil {
     private final Context context;
     private final QuizRepository quizRepository;
     private final QuestionRepository questionRepository;
+    private final StudyModuleRepository studyModuleRepository;
     private final TaskRepository taskRepository;
     private final TimerRepository timerRepository;
     private final UserRepository userRepository;
@@ -27,6 +29,7 @@ public class FirestoreSyncUtil {
         this.context = context;
         this.quizRepository = new QuizRepository(context);
         this.questionRepository = new QuestionRepository(context);
+        this.studyModuleRepository = new StudyModuleRepository(context);
         this.taskRepository = new TaskRepository(context);
         this.timerRepository = new TimerRepository(context);
         this.userRepository = new UserRepository(context);
@@ -39,10 +42,18 @@ public class FirestoreSyncUtil {
      */
     public void syncAllData(String userId) {
         syncUserProfile(userId);
+        syncStudyModules(userId);
         syncQuizzes(userId);
         syncTasks(userId);
         syncTimerSessions(userId);
         syncQuizAttempts(userId);
+    }
+
+    /**
+     * Sync study modules from Firestore to Room
+     */
+    private void syncStudyModules(String userId) {
+        studyModuleRepository.syncStudyModulesFromFirestore(userId);
     }
 
     /**
@@ -103,6 +114,7 @@ public class FirestoreSyncUtil {
      * Clear all local cached data
      */
     public void clearAllLocalData() {
+        studyModuleRepository.clearLocalData();
         quizRepository.clearLocalData();
         questionRepository.clearLocalData();
         taskRepository.clearLocalData();

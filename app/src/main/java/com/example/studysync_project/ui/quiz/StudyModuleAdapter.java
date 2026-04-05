@@ -120,6 +120,8 @@ public class StudyModuleAdapter extends ListAdapter<StudyModule, StudyModuleAdap
                     return "Ready-made";
                 case "AI_PERSONALIZED":
                     return "AI personalized";
+                case "AI_TOPIC_REQUEST":
+                    return "AI topic";
                 case "UPLOADED_FILE":
                     return "Uploaded";
                 default:

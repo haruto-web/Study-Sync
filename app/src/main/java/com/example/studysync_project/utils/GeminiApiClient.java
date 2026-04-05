@@ -117,6 +117,55 @@ public class GeminiApiClient {
         return getService().generateContent(API_KEY, buildRequestBody(prompt));
     }
 
+    /**
+     * Generates a complete study module from the learner's current topic or interest.
+     */
+    public static Call<JsonObject> generateTopicStudyModule(
+            String currentStudyTopic,
+            String interestTopic,
+            String learningGoal
+    ) {
+        String safeCurrentTopic = currentStudyTopic != null ? currentStudyTopic.trim() : "";
+        String safeInterestTopic = interestTopic != null ? interestTopic.trim() : "";
+        String safeGoal = learningGoal != null ? learningGoal.trim() : "";
+
+        String primaryTopic;
+        if (!safeCurrentTopic.isEmpty()) {
+            primaryTopic = safeCurrentTopic;
+        } else if (!safeInterestTopic.isEmpty()) {
+            primaryTopic = safeInterestTopic;
+        } else {
+            primaryTopic = "General Study Skills";
+        }
+
+        if (safeInterestTopic.isEmpty()) {
+            safeInterestTopic = primaryTopic;
+        }
+
+        if (safeGoal.isEmpty()) {
+            safeGoal = "Build strong conceptual understanding and practical recall";
+        }
+
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("You are an educational tutor. Create a high-quality study module for a student.\n")
+                .append("Primary topic: ").append(primaryTopic).append("\n")
+                .append("Current study context: ").append(safeCurrentTopic.isEmpty() ? "Not specified" : safeCurrentTopic).append("\n")
+                .append("Interest focus: ").append(safeInterestTopic).append("\n")
+                .append("Learning goal: ").append(safeGoal).append("\n\n")
+                .append("Write between 500 and 700 words and include these sections in plain text:\n")
+                .append("1) Title\n")
+                .append("2) Why this topic matters\n")
+                .append("3) Core ideas explained simply\n")
+                .append("4) Real-world examples\n")
+                .append("5) Common mistakes and fixes\n")
+                .append("6) Quick self-check questions\n")
+                .append("7) 20-minute study plan\n\n")
+                .append("Use clear, student-friendly language. Keep it practical and accurate. ")
+                .append("Return plain text only. Do not return JSON, markdown code fences, or extra commentary.");
+
+        return getService().generateContent(API_KEY, buildRequestBody(prompt.toString()));
+    }
+
             /**
              * Generates a short personalized study module from quiz performance and current learner interest.
              */

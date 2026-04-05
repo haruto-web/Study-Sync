@@ -45,4 +45,15 @@
     <string name="quiz_result_module_generation_failed">Could not generate a personalized module right now. Please try again.</string>
     <string name="quiz_result_module_generation_empty">AI returned an empty module. Please try again.</string>
     <string name="quiz_result_generated_module_title">AI Personalized Module: %1$s</string>
+
+    <string name="generate_module_topic_required">Enter what you are studying or interested in.</string>
+    <string name="generate_module_loading">Gemini is generating your module...</string>
+    <string name="generate_module_failed">Could not generate a module right now. Please try again.</string>
+    <string name="generate_module_empty">Gemini returned an empty module. Please try again.</string>
+    <string name="generate_module_saved">Module saved to your Study Library.</string>
+    <string name="generate_module_user_missing">Please sign in again to save your module.</string>
+    <string name="generate_module_title_format">AI Module: %1$s</string>
+    <string name="generate_module_description">AI-generated module based on your current study topic and interests.</string>
+    <string name="generate_module_no_generated_content">Generate a module first.</string>
+    <string name="generate_module_no_saved_module">No saved module yet.</string>
 </resources>

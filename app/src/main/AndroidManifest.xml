@@ -79,6 +79,11 @@
             android:windowSoftInputMode="adjustPan|stateHidden" />
 
         <activity
+            android:name=".ui.quiz.GenerateModuleActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize|stateHidden" />
+
+        <activity
             android:name=".ui.quiz.ModuleDetailActivity"
             android:exported="false"
             android:parentActivityName=".MainActivity" />

@@ -102,6 +102,9 @@ public class QuizFragment extends Fragment implements
         // FAB opens upload module flow
         binding.fabAddQuiz.setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), UploadModuleActivity.class)));
+
+        binding.btnOpenGeminiModuleGenerator.setOnClickListener(v ->
+            startActivity(new Intent(requireContext(), GenerateModuleActivity.class)));
     }
 
     private void updateOverallEmptyState() {

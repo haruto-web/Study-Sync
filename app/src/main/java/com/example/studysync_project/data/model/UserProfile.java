@@ -35,6 +35,7 @@ public class UserProfile {
     public boolean personalizationEnabled;
 
     public String gradeLevel;
+    public String strand;
     public String goal;
     public String subjectsCsv;
     public String topicsOfInterestCsv;
@@ -63,6 +64,7 @@ public class UserProfile {
         this.personalizationEnabled = false;
 
         this.gradeLevel = null;
+        this.strand = null;
         this.goal = null;
         this.subjectsCsv = null;
         this.topicsOfInterestCsv = null;
@@ -90,6 +92,7 @@ public class UserProfile {
     public boolean isPersonalizationEnabled() { return personalizationEnabled; }
 
     public String getGradeLevel() { return gradeLevel; }
+    public String getStrand() { return strand; }
     public String getGoal() { return goal; }
     public String getSubjectsCsv() { return subjectsCsv; }
     public String getTopicsOfInterestCsv() { return topicsOfInterestCsv; }
@@ -115,6 +118,7 @@ public class UserProfile {
     public void setPersonalizationEnabled(boolean personalizationEnabled) { this.personalizationEnabled = personalizationEnabled; }
 
     public void setGradeLevel(String gradeLevel) { this.gradeLevel = gradeLevel; }
+    public void setStrand(String strand) { this.strand = strand; }
     public void setGoal(String goal) { this.goal = goal; }
     public void setSubjectsCsv(String subjectsCsv) { this.subjectsCsv = subjectsCsv; }
     public void setTopicsOfInterestCsv(String topicsOfInterestCsv) { this.topicsOfInterestCsv = topicsOfInterestCsv; }

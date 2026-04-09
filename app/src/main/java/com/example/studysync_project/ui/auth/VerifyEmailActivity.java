@@ -47,8 +47,8 @@ public class VerifyEmailActivity extends AppCompatActivity {
 
         user.reload().addOnSuccessListener(unused -> {
             if (user.isEmailVerified()) {
-                Toast.makeText(this, "Email verified! Welcome.", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(this, LoginActivity.class));
+                Toast.makeText(this, "Email verified! Let's set up your profile.", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, com.example.studysync_project.ui.onboarding.OnboardingActivity.class));
                 finish();
             } else {
                 Toast.makeText(this, "Email not verified yet. Please check your inbox.", Toast.LENGTH_SHORT).show();

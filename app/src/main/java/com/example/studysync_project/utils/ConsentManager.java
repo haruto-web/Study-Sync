@@ -5,12 +5,6 @@ import android.content.SharedPreferences;
 
 import androidx.annotation.NonNull;
 
-/**
- * Centralizes consent/onboarding flags.
- *
- * Source of truth should remain Firestore, but these preferences provide fast gating and
- * offline-friendly behavior.
- */
 public final class ConsentManager {
 
     private ConsentManager() {}
@@ -67,12 +61,14 @@ public final class ConsentManager {
             Context context,
             @NonNull String userId,
             String gradeLevel,
+            String strand,
             String goal,
             String subject,
             String topicsCsv
     ) {
         prefs(context).edit()
                 .putString(key("grade_level", userId), gradeLevel)
+                .putString(key("strand", userId), strand)
                 .putString(key("goal", userId), goal)
                 .putString(key("subject", userId), subject)
                 .putString(key("topics_csv", userId), topicsCsv)
@@ -81,6 +77,10 @@ public final class ConsentManager {
 
     public static String getStoredGradeLevel(Context context, @NonNull String userId) {
         return prefs(context).getString(key("grade_level", userId), null);
+    }
+
+    public static String getStoredStrand(Context context, @NonNull String userId) {
+        return prefs(context).getString(key("strand", userId), null);
     }
 
     public static String getStoredGoal(Context context, @NonNull String userId) {

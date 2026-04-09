@@ -68,7 +68,8 @@ public class SplashActivity extends AppCompatActivity {
                         // Keep local onboarding cache in sync with profile completeness from Firestore.
                         boolean hasRequiredFirestoreOnboardingData = hasRequiredOnboardingData(gradeLevel, goal, subjectsCsv);
                         if (hasRequiredFirestoreOnboardingData) {
-                            ConsentManager.storeOnboarding(this, userId, gradeLevel, goal, subjectsCsv, topicsCsv);
+                            String firestoreStrand = doc.getString("strand");
+                            ConsentManager.storeOnboarding(this, userId, gradeLevel, firestoreStrand != null ? firestoreStrand : "", goal, subjectsCsv, topicsCsv);
                         }
 
                         String localGradeLevel = ConsentManager.getStoredGradeLevel(this, userId);

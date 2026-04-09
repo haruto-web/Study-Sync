@@ -10,6 +10,7 @@
     <string name="onboarding_title">Quick Setup</string>
     <string name="onboarding_subtitle">Help us tailor your study experience.</string>
     <string name="onboarding_grade_level">Grade level</string>
+    <string name="onboarding_strand">SHS Strand</string>
     <string name="onboarding_goal">Primary goal</string>
     <string name="onboarding_subject">Primary subject</string>
     <string name="onboarding_topics">Topic interests (comma-separated)</string>

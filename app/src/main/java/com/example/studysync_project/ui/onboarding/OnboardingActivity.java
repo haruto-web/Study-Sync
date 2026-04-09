@@ -2,6 +2,7 @@ package com.example.studysync_project.ui.onboarding;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
@@ -40,6 +41,13 @@ public class OnboardingActivity extends AppCompatActivity {
         );
         binding.actGradeLevel.setAdapter(gradeAdapter);
 
+        ArrayAdapter<CharSequence> strandAdapter = ArrayAdapter.createFromResource(
+                this,
+                com.example.studysync_project.R.array.shs_strands,
+                android.R.layout.simple_list_item_1
+        );
+        binding.actStrand.setAdapter(strandAdapter);
+
         ArrayAdapter<CharSequence> goalAdapter = ArrayAdapter.createFromResource(
                 this,
                 com.example.studysync_project.R.array.study_goals,
@@ -48,19 +56,24 @@ public class OnboardingActivity extends AppCompatActivity {
         binding.actGoal.setAdapter(goalAdapter);
 
         ArrayAdapter<CharSequence> subjectAdapter = ArrayAdapter.createFromResource(
-            this,
-            com.example.studysync_project.R.array.subjects,
-            android.R.layout.simple_list_item_1
+                this,
+                com.example.studysync_project.R.array.subjects,
+                android.R.layout.simple_list_item_1
         );
         binding.actSubject.setAdapter(subjectAdapter);
+
+        binding.actGradeLevel.setOnItemClickListener((parent, view, position, id) -> {
+            String selected = parent.getItemAtPosition(position).toString();
+            boolean isShs = selected.equals("Grade 11") || selected.equals("Grade 12");
+            binding.tilStrand.setVisibility(isShs ? View.VISIBLE : View.GONE);
+            if (!isShs) binding.actStrand.setText("", false);
+        });
 
         binding.btnContinue.setOnClickListener(v -> saveAndContinue());
     }
 
     private void saveAndContinue() {
-        if (isSaving) {
-            return;
-        }
+        if (isSaving) return;
 
         FirebaseUser user = auth.getCurrentUser();
         if (user == null) {
@@ -71,6 +84,7 @@ public class OnboardingActivity extends AppCompatActivity {
 
         String userId = user.getUid();
         String gradeLevel = binding.actGradeLevel.getText() != null ? binding.actGradeLevel.getText().toString().trim() : "";
+        String strand = binding.actStrand.getText() != null ? binding.actStrand.getText().toString().trim() : "";
         String goal = binding.actGoal.getText() != null ? binding.actGoal.getText().toString().trim() : "";
         String subject = binding.actSubject.getText() != null ? binding.actSubject.getText().toString().trim() : "";
         String topicsCsv = binding.etTopics.getText() != null ? binding.etTopics.getText().toString().trim() : "";
@@ -79,11 +93,15 @@ public class OnboardingActivity extends AppCompatActivity {
             Toast.makeText(this, "Please select your grade level", Toast.LENGTH_SHORT).show();
             return;
         }
+        boolean isShs = gradeLevel.equals("Grade 11") || gradeLevel.equals("Grade 12");
+        if (isShs && strand.isEmpty()) {
+            Toast.makeText(this, "Please select your SHS strand", Toast.LENGTH_SHORT).show();
+            return;
+        }
         if (goal.isEmpty()) {
             Toast.makeText(this, "Please select your study goal", Toast.LENGTH_SHORT).show();
             return;
         }
-
         if (subject.isEmpty()) {
             Toast.makeText(this, "Please select a subject", Toast.LENGTH_SHORT).show();
             return;
@@ -92,12 +110,13 @@ public class OnboardingActivity extends AppCompatActivity {
         setSavingState(true);
 
         ConsentManager.setOnboardedV1(this, userId, true);
-        ConsentManager.storeOnboarding(this, userId, gradeLevel, goal, subject, topicsCsv);
+        ConsentManager.storeOnboarding(this, userId, gradeLevel, strand, goal, subject, topicsCsv);
 
         boolean personalizationEnabled = ConsentManager.isPersonalizationEnabled(this, userId);
         if (personalizationEnabled && NetworkUtil.isNetworkAvailable(this)) {
             Map<String, Object> updates = new HashMap<>();
             updates.put("gradeLevel", gradeLevel);
+            updates.put("strand", strand);
             updates.put("goal", goal);
             updates.put("subjectsCsv", subject);
             updates.put("topicsOfInterestCsv", topicsCsv);
@@ -114,7 +133,6 @@ public class OnboardingActivity extends AppCompatActivity {
             return;
         }
 
-        // Limited mode or offline: store locally only.
         goToMain();
     }
 
@@ -122,6 +140,7 @@ public class OnboardingActivity extends AppCompatActivity {
         isSaving = saving;
         binding.btnContinue.setEnabled(!saving);
         binding.actGradeLevel.setEnabled(!saving);
+        binding.actStrand.setEnabled(!saving);
         binding.actGoal.setEnabled(!saving);
         binding.actSubject.setEnabled(!saving);
         binding.etTopics.setEnabled(!saving);

@@ -38,6 +38,7 @@ public class HomeFragment extends Fragment {
     private ReadyModule recommendedModule;
     private Double latestAverageScore;
     private String profileGradeLevel;
+    private String profileStrand;
     private String profileGoal;
     private String profileSubject;
     private String profileTopicsCsv;
@@ -74,6 +75,7 @@ public class HomeFragment extends Fragment {
                     if (email != null) binding.tvUserEmail.setText(email);
 
                 profileGradeLevel = doc.getString("gradeLevel");
+                profileStrand = doc.getString("strand");
                 profileGoal = doc.getString("goal");
                 profileSubject = doc.getString("subjectsCsv");
                 profileTopicsCsv = doc.getString("topicsOfInterestCsv");
@@ -81,6 +83,7 @@ public class HomeFragment extends Fragment {
                 // Cache locally to support limited/offline behavior.
                 ConsentManager.storeOnboarding(requireContext(), userId,
                     profileGradeLevel != null ? profileGradeLevel : "",
+                    profileStrand != null ? profileStrand : "",
                     profileGoal != null ? profileGoal : "",
                     profileSubject != null ? profileSubject : "",
                     profileTopicsCsv != null ? profileTopicsCsv : "");
@@ -144,12 +147,16 @@ public class HomeFragment extends Fragment {
         if (binding == null || userId == null) return;
 
         String gradeLevel = profileGradeLevel;
+        String strand = profileStrand;
         String subject = profileSubject;
         String topicsCsv = profileTopicsCsv;
 
         // Fall back to locally stored onboarding for limited mode/offline.
         if (gradeLevel == null || gradeLevel.trim().isEmpty()) {
             gradeLevel = ConsentManager.getStoredGradeLevel(requireContext(), userId);
+        }
+        if (strand == null || strand.trim().isEmpty()) {
+            strand = ConsentManager.getStoredStrand(requireContext(), userId);
         }
         if (subject == null || subject.trim().isEmpty()) {
             subject = ConsentManager.getStoredSubject(requireContext(), userId);
@@ -158,7 +165,7 @@ public class HomeFragment extends Fragment {
             topicsCsv = ConsentManager.getStoredTopicsCsv(requireContext(), userId);
         }
 
-        List<ReadyModule> filtered = filterModules(gradeLevel, subject, topicsCsv);
+        List<ReadyModule> filtered = filterModules(gradeLevel, strand, subject, topicsCsv);
         // Keep list short on Home.
         if (filtered.size() > 3) {
             filtered = filtered.subList(0, 3);
@@ -169,11 +176,12 @@ public class HomeFragment extends Fragment {
         recommendedModule = filtered.isEmpty() ? null : filtered.get(0);
     }
 
-    private List<ReadyModule> filterModules(String gradeLevel, String subject, String topicsCsv) {
+    private List<ReadyModule> filterModules(String gradeLevel, String strand, String subject, String topicsCsv) {
         List<ReadyModule> all = ReadyModuleCatalog.getAllModules();
         List<ReadyModule> out = new ArrayList<>();
 
         String grade = gradeLevel != null ? gradeLevel.trim() : "";
+        String strandKey = strand != null ? strand.trim() : "";
         String subj = subject != null ? subject.trim() : "";
         String topics = topicsCsv != null ? topicsCsv.trim() : "";
 
@@ -182,6 +190,15 @@ public class HomeFragment extends Fragment {
         for (ReadyModule m : all) {
             if (!grade.isEmpty() && m.gradeLevel != null && !m.gradeLevel.equalsIgnoreCase(grade)) {
                 continue;
+            }
+            // For SHS grades, also filter by strand if the module has a strand
+            if (!strandKey.isEmpty() && m.strand != null && !m.strand.isEmpty()) {
+                // Match on the strand abbreviation (e.g. "STEM" matches "STEM (Science...)"
+                String mStrand = m.strand.toUpperCase();
+                String sKey = strandKey.toUpperCase();
+                if (!sKey.contains(mStrand) && !mStrand.contains(sKey.split("[\\ (]")[0])) {
+                    continue;
+                }
             }
             if (!subj.isEmpty() && m.subject != null && !m.subject.equalsIgnoreCase(subj)) {
                 continue;
@@ -199,27 +216,25 @@ public class HomeFragment extends Fragment {
                 }
                 if (!match) continue;
             }
-
             out.add(m);
         }
 
-        // If topics filter returns nothing, fall back to grade+subject only.
+        // If topics filter returns nothing, fall back to grade+strand+subject only.
         if (out.isEmpty() && tokens.length > 0) {
             for (ReadyModule m : all) {
-                if (!grade.isEmpty() && m.gradeLevel != null && !m.gradeLevel.equalsIgnoreCase(grade)) {
-                    continue;
+                if (!grade.isEmpty() && m.gradeLevel != null && !m.gradeLevel.equalsIgnoreCase(grade)) continue;
+                if (!strandKey.isEmpty() && m.strand != null && !m.strand.isEmpty()) {
+                    String mStrand = m.strand.toUpperCase();
+                    String sKey = strandKey.toUpperCase();
+                    if (!sKey.contains(mStrand) && !mStrand.contains(sKey.split("[\\ (]")[0])) continue;
                 }
-                if (!subj.isEmpty() && m.subject != null && !m.subject.equalsIgnoreCase(subj)) {
-                    continue;
-                }
+                if (!subj.isEmpty() && m.subject != null && !m.subject.equalsIgnoreCase(subj)) continue;
                 out.add(m);
             }
         }
 
         // If still empty, return unfiltered list.
-        if (out.isEmpty()) {
-            out.addAll(all);
-        }
+        if (out.isEmpty()) out.addAll(all);
 
         return out;
     }

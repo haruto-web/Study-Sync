@@ -4,6 +4,7 @@ import android.Manifest;
 import android.graphics.Color;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -22,15 +23,27 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.fragment.NavHostFragment;
 
+import com.example.studysync_project.BuildConfig;
 import com.example.studysync_project.MainActivity;
 import com.example.studysync_project.R;
 import com.example.studysync_project.data.model.Question;
 import com.example.studysync_project.data.model.Quiz;
+import com.example.studysync_project.data.model.QuizAttempt;
+import com.example.studysync_project.data.repository.QuizAttemptRepository;
 import com.example.studysync_project.databinding.FragmentArBinding;
+import com.example.studysync_project.utils.GeminiApiClient;
+import com.example.studysync_project.utils.IdUtil;
+import com.example.studysync_project.utils.NetworkUtil;
+import com.google.ar.core.Anchor;
 import com.google.ar.core.ArCoreApk;
+import com.google.ar.core.Camera;
+import com.google.ar.core.CameraConfig;
+import com.google.ar.core.CameraConfigFilter;
+import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
+import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
@@ -40,15 +53,29 @@ import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.ArSceneView;
+import com.google.ar.sceneform.math.Quaternion;
+import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.google.ar.sceneform.ux.TransformableNode;
 import com.google.ar.sceneform.ux.TransformationSystem;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.gson.JsonObject;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ArFlashcardFragment extends Fragment {
+
+    private static final String TAG = "ArFlashcardFragment";
+    private static final int MAX_AR_AVAILABILITY_RETRIES = 12;
+    private static final float CARD_PLACEMENT_DISTANCE_METERS = 1.0f;
+    private static final float CARD_VERTICAL_OFFSET_METERS = 0.06f;
 
     private final List<AnchorNode> placedNodes = new ArrayList<>();
     private final ActivityResultLauncher<String> cameraPermissionLauncher =
@@ -67,11 +94,22 @@ public class ArFlashcardFragment extends Fragment {
     private boolean cameraPermissionRequested;
     private boolean sceneTouchListenerAttached;
     private boolean controlsExpanded = true;
+    private int arAvailabilityRetryCount;
 
     private ArFlashcardViewModel viewModel;
     private List<Quiz> availableQuizzes = new ArrayList<>();
     private List<Question> selectedQuestions = new ArrayList<>();
     private int selectedQuestionIndex = 0;
+    private int answeredQuestionCount = 0;
+    private int correctAnswerCount = 0;
+    private boolean currentQuestionAnswered;
+    private boolean isQuizCompleted;
+    private boolean questionSessionInitialized;
+    private boolean noQuestionsToastShown;
+    private boolean isGeneratingAiInsight;
+    private String activeQuizId;
+    private String activeQuizSubject = "General";
+    private final List<String> userAnswers = new ArrayList<>();
     private LiveData<List<Question>> questionsLiveData;
 
     @Nullable
@@ -94,6 +132,7 @@ public class ArFlashcardFragment extends Fragment {
             }
         }).get(ArFlashcardViewModel.class);
 
+        setupAnswerControls();
         setupQuizSelector();
         binding.btnRetryAr.setOnClickListener(v -> retryArStartup());
         binding.btnArFallback.setOnClickListener(v -> navigateToStandardFlashcards());
@@ -108,11 +147,7 @@ public class ArFlashcardFragment extends Fragment {
                 Toast.makeText(requireContext(), "AR scene is not ready.", Toast.LENGTH_SHORT).show();
                 return;
             }
-            for (AnchorNode node : placedNodes) {
-                arSceneView.getScene().removeChild(node);
-                if (node.getAnchor() != null) node.getAnchor().detach();
-            }
-            placedNodes.clear();
+            clearPlacedNodes();
             Toast.makeText(requireContext(), "Cleared", Toast.LENGTH_SHORT).show();
         });
 
@@ -134,14 +169,39 @@ public class ArFlashcardFragment extends Fragment {
             return;
         }
 
-        ArCoreApk.Availability availability = ArCoreApk.getInstance().checkAvailability(requireContext());
+        ArCoreApk.Availability availability;
+        try {
+            availability = ArCoreApk.getInstance().checkAvailability(requireContext());
+        } catch (Throwable t) {
+            Log.e(TAG, "ARCore availability check failed", t);
+            showArUnavailable(getString(R.string.ar_install_check_failed, safeMessage(t)));
+            return;
+        }
+
+        if (!availability.isSupported()) {
+            showArUnavailable("This device does not support ARCore.");
+            return;
+        }
+
         if (availability == ArCoreApk.Availability.UNSUPPORTED_DEVICE_NOT_CAPABLE) {
             showArUnavailable("This device does not support ARCore.");
             return;
         }
 
         if (availability.isTransient()) {
+            if (arAvailabilityRetryCount >= MAX_AR_AVAILABILITY_RETRIES) {
+                showArUnavailable(getString(R.string.ar_install_check_failed,
+                        "Timed out while checking ARCore availability."));
+                return;
+            }
+            arAvailabilityRetryCount++;
             binding.getRoot().postDelayed(this::startArIfPossible, 300L);
+            return;
+        }
+        arAvailabilityRetryCount = 0;
+
+        // requestInstall should run after the Fragment has reached RESUMED.
+        if (!isResumed()) {
             return;
         }
 
@@ -156,16 +216,26 @@ public class ArFlashcardFragment extends Fragment {
         } catch (UnavailableUserDeclinedInstallationException e) {
             showArUnavailable(getString(R.string.ar_install_declined));
             return;
+        } catch (SecurityException e) {
+            Log.e(TAG, "Security exception during ARCore install flow", e);
+            showArUnavailable(getString(R.string.ar_install_check_failed, safeMessage(e)));
+            return;
         } catch (Exception e) {
             showArUnavailable(getString(R.string.ar_install_check_failed, safeMessage(e)));
             return;
         }
 
-        arSceneView = binding.arSceneView;
+        if (arSceneView == null) {
+            arSceneView = binding.arSceneView;
+        }
         try {
-            if (arSceneView.getSession() == null) {
-                Session session = new Session(requireContext());
+            Session session = arSceneView.getSession();
+            if (session == null) {
+                session = new Session(requireActivity());
+                configureSessionForStability(session);
                 arSceneView.setupSession(session);
+            } else {
+                configureSessionForStability(session);
             }
             attachSceneTouchListenerIfNeeded();
             arAvailable = true;
@@ -182,6 +252,9 @@ public class ArFlashcardFragment extends Fragment {
             showArUnavailable("This device does not support ARCore.");
         } catch (Exception e) {
             showArUnavailable(getString(R.string.ar_session_not_ready, safeMessage(e)));
+        } catch (Throwable t) {
+            Log.e(TAG, "Unexpected AR session startup failure", t);
+            showArUnavailable(getString(R.string.ar_session_not_ready, safeMessage(t)));
         }
     }
 
@@ -197,25 +270,83 @@ public class ArFlashcardFragment extends Fragment {
 
         arSceneView.getScene().addOnPeekTouchListener((hitTestResult, motionEvent) -> {
             if (motionEvent.getAction() != MotionEvent.ACTION_UP) return;
-            String text = binding.etFlashcardText.getText() != null
-                    ? binding.etFlashcardText.getText().toString().trim() : "";
+            showTapFocusIndicator(motionEvent);
+
+            String text = getCurrentCardText();
             if (text.isEmpty()) {
                 Toast.makeText(requireContext(), "Enter flashcard text first", Toast.LENGTH_SHORT).show();
                 return;
             }
+
             Frame frame = arSceneView.getArFrame();
             if (frame == null) return;
             List<HitResult> hits = frame.hitTest(motionEvent);
-            for (HitResult hit : hits) {
-                if (hit.getTrackable() instanceof Plane &&
-                        ((Plane) hit.getTrackable()).getType() == Plane.Type.HORIZONTAL_UPWARD_FACING &&
-                        hit.getTrackable().getTrackingState() == TrackingState.TRACKING) {
-                    placeFlashcard(hit, text);
-                    break;
-                }
+            HitResult placementHit = pickPlacementHit(hits);
+            if (placementHit != null) {
+                placeFlashcard(placementHit.createAnchor(), text);
+                return;
+            }
+
+            boolean fallbackPlaced = placeFlashcardInFrontOfCamera(frame, text);
+            if (!fallbackPlaced) {
+                Toast.makeText(requireContext(), getString(R.string.ar_surface_not_ready), Toast.LENGTH_SHORT).show();
             }
         });
         sceneTouchListenerAttached = true;
+    }
+
+    @Nullable
+    private HitResult pickPlacementHit(List<HitResult> hits) {
+        for (HitResult hit : hits) {
+            if (hit.getTrackable() instanceof Plane) {
+                Plane plane = (Plane) hit.getTrackable();
+                if (plane.getTrackingState() == TrackingState.TRACKING && plane.isPoseInPolygon(hit.getHitPose())) {
+                    return hit;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private boolean placeFlashcardInFrontOfCamera(Frame frame, String text) {
+        if (arSceneView == null || arSceneView.getSession() == null) {
+            return false;
+        }
+
+        try {
+            Camera camera = frame.getCamera();
+            if (camera.getTrackingState() != TrackingState.TRACKING) {
+                return false;
+            }
+
+            Pose cameraPose = camera.getPose();
+            Pose cardPose = cameraPose.compose(Pose.makeTranslation(
+                    0f,
+                    -0.08f,
+                    -CARD_PLACEMENT_DISTANCE_METERS
+            ));
+
+            Anchor anchor = arSceneView.getSession().createAnchor(cardPose);
+            placeFlashcard(anchor, text);
+            return true;
+        } catch (Throwable t) {
+            Log.w(TAG, "Unable to place AR card in front of camera", t);
+            return false;
+        }
+    }
+
+    private void faceNodeToCamera(TransformableNode node) {
+        if (arSceneView == null) {
+            return;
+        }
+        Vector3 cardPosition = node.getWorldPosition();
+        Vector3 cameraPosition = arSceneView.getScene().getCamera().getWorldPosition();
+        Vector3 forward = Vector3.subtract(cameraPosition, cardPosition);
+        if (forward.length() < 0.0001f) {
+            return;
+        }
+        node.setWorldRotation(Quaternion.lookRotation(forward, Vector3.up()));
     }
 
     private void navigateToStandardFlashcards() {
@@ -235,15 +366,68 @@ public class ArFlashcardFragment extends Fragment {
 
     private void retryArStartup() {
         cameraPermissionRequested = false;
+        installRequested = false;
+        arAvailabilityRetryCount = 0;
         startArIfPossible();
     }
 
-    private String safeMessage(Exception e) {
-        String message = e.getMessage();
+    private String safeMessage(Throwable throwable) {
+        String message = throwable.getMessage();
         if (message == null || message.trim().isEmpty()) {
-            return e.getClass().getSimpleName();
+            return throwable.getClass().getSimpleName();
         }
         return message;
+    }
+
+    private String getCurrentCardText() {
+        Question currentQuestion = getCurrentQuestion();
+        if (currentQuestion != null) {
+            String questionText = currentQuestion.getQuestionText();
+            if (questionText != null && !questionText.trim().isEmpty()) {
+                return questionText.trim();
+            }
+        }
+
+        if (binding == null || binding.etFlashcardText.getText() == null) {
+            return "";
+        }
+        return binding.etFlashcardText.getText().toString().trim();
+    }
+
+    @Nullable
+    private Question getCurrentQuestion() {
+        if (selectedQuestions == null || selectedQuestions.isEmpty()) {
+            return null;
+        }
+        if (selectedQuestionIndex < 0 || selectedQuestionIndex >= selectedQuestions.size()) {
+            selectedQuestionIndex = 0;
+        }
+        return selectedQuestions.get(selectedQuestionIndex);
+    }
+
+    private void configureSessionForStability(Session session) {
+        try {
+            CameraConfigFilter filter = new CameraConfigFilter(session)
+                    .setTargetFps(EnumSet.of(CameraConfig.TargetFps.TARGET_FPS_30));
+            List<CameraConfig> configs = session.getSupportedCameraConfigs(filter);
+            if (!configs.isEmpty()) {
+                session.setCameraConfig(configs.get(0));
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "Unable to apply preferred AR camera config", t);
+        }
+
+        try {
+            Config config = session.getConfig();
+            config.setDepthMode(Config.DepthMode.DISABLED);
+            config.setInstantPlacementMode(Config.InstantPlacementMode.DISABLED);
+            config.setLightEstimationMode(Config.LightEstimationMode.DISABLED);
+            config.setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
+            config.setUpdateMode(Config.UpdateMode.LATEST_CAMERA_IMAGE);
+            session.configure(config);
+        } catch (Throwable t) {
+            Log.w(TAG, "Unable to apply stable AR session settings", t);
+        }
     }
 
     private void applyArControlPanelState() {
@@ -256,12 +440,12 @@ public class ArFlashcardFragment extends Fragment {
         );
     }
 
-    private void placeFlashcard(HitResult hitResult, String text) {
+    private void placeFlashcard(Anchor anchor, String text) {
         ViewRenderable.builder()
                 .setView(requireContext(), buildCardView(text))
                 .build()
                 .thenAccept(renderable -> {
-                    AnchorNode anchorNode = new AnchorNode(hitResult.createAnchor());
+                    AnchorNode anchorNode = new AnchorNode(anchor);
                     anchorNode.setParent(arSceneView.getScene());
 
                     TransformationSystem ts = new TransformationSystem(
@@ -270,14 +454,510 @@ public class ArFlashcardFragment extends Fragment {
                     TransformableNode node = new TransformableNode(ts);
                     node.setParent(anchorNode);
                     node.setRenderable(renderable);
+                    node.setLocalPosition(new Vector3(0f, CARD_VERTICAL_OFFSET_METERS, 0f));
+                    node.getTranslationController().setEnabled(false);
+                    node.getScaleController().setEnabled(false);
+                    node.getRotationController().setEnabled(false);
+                    faceNodeToCamera(node);
                     placedNodes.add(anchorNode);
-
-                    advanceSelectedQuestionIfNeeded();
                 })
                 .exceptionally(t -> {
                     Toast.makeText(requireContext(), "Failed to place card", Toast.LENGTH_SHORT).show();
+                    try {
+                        anchor.detach();
+                    } catch (Throwable detachError) {
+                        Log.w(TAG, "Failed to detach anchor after render failure", detachError);
+                    }
                     return null;
                 });
+    }
+
+    private void setupAnswerControls() {
+        if (binding == null) {
+            return;
+        }
+
+        binding.btnSubmitArAnswer.setOnClickListener(v -> submitCurrentAnswer());
+        binding.btnNextArQuestion.setOnClickListener(v -> handleNextQuestionTap());
+
+        binding.rgArOptions.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId != View.NO_ID && !currentQuestionAnswered && !isQuizCompleted) {
+                binding.tvArAnswerFeedback.setText(getString(R.string.ar_answer_select_prompt));
+            }
+        });
+
+        updateQuestionPanel();
+    }
+
+    private void submitCurrentAnswer() {
+        if (binding == null) {
+            return;
+        }
+
+        Question question = getCurrentQuestion();
+        if (question == null) {
+            Toast.makeText(requireContext(), getString(R.string.ar_no_questions_loaded), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (currentQuestionAnswered || isQuizCompleted) {
+            return;
+        }
+
+        String selectedAnswer = getSelectedAnswerLetter();
+        if (selectedAnswer.isEmpty()) {
+            Toast.makeText(requireContext(), getString(R.string.ar_answer_pick_required), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        ensureUserAnswersCapacity(selectedQuestions.size());
+        userAnswers.set(selectedQuestionIndex, selectedAnswer);
+
+        String correctAnswer = resolveCorrectAnswerLetter(question);
+        answeredQuestionCount++;
+
+        boolean isCorrect = selectedAnswer.equals(correctAnswer);
+        if (isCorrect) {
+            correctAnswerCount++;
+            binding.tvArAnswerFeedback.setText(getString(R.string.ar_answer_correct, selectedAnswer));
+        } else {
+            String fallbackCorrectAnswer = correctAnswer.isEmpty() ? "?" : correctAnswer;
+            binding.tvArAnswerFeedback.setText(getString(
+                    R.string.ar_answer_wrong,
+                    selectedAnswer,
+                    fallbackCorrectAnswer
+            ));
+        }
+
+        currentQuestionAnswered = true;
+        binding.btnSubmitArAnswer.setEnabled(false);
+        if (selectedQuestionIndex >= selectedQuestions.size() - 1) {
+            completeArQuizSession();
+        } else {
+            binding.btnNextArQuestion.setEnabled(true);
+        }
+        updateScoreLabel();
+    }
+
+    private void handleNextQuestionTap() {
+        if (isQuizCompleted) {
+            return;
+        }
+
+        if (!currentQuestionAnswered) {
+            Toast.makeText(requireContext(), getString(R.string.ar_submit_before_next), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        boolean moved = advanceSelectedQuestionIfNeeded();
+        if (!moved) {
+            completeArQuizSession();
+            return;
+        }
+
+        updateQuestionPanel();
+    }
+
+    private void completeArQuizSession() {
+        if (isQuizCompleted) {
+            return;
+        }
+        isQuizCompleted = true;
+        currentQuestionAnswered = true;
+
+        if (binding != null) {
+            binding.btnSubmitArAnswer.setEnabled(false);
+            binding.btnNextArQuestion.setEnabled(false);
+            binding.btnNextArQuestion.setText(R.string.ar_quiz_completed);
+            setOptionInputsEnabled(false);
+            binding.tvArAnswerFeedback.setText(getString(
+                    R.string.ar_quiz_complete_summary,
+                    correctAnswerCount,
+                    selectedQuestions.size()
+            ));
+        }
+
+        updateScoreLabel();
+        saveArQuizAttempt();
+        requestAiInsightForCompletedQuiz();
+    }
+
+    private void requestAiInsightForCompletedQuiz() {
+        if (binding == null || selectedQuestions.isEmpty()) {
+            return;
+        }
+
+        binding.tvArAiInsight.setVisibility(View.VISIBLE);
+
+        if (BuildConfig.GEMINI_API_KEY == null || BuildConfig.GEMINI_API_KEY.trim().isEmpty()) {
+            showFallbackAiInsight();
+            return;
+        }
+
+        if (!NetworkUtil.isNetworkAvailable(requireContext())) {
+            showFallbackAiInsight();
+            return;
+        }
+
+        if (isGeneratingAiInsight) {
+            return;
+        }
+
+        isGeneratingAiInsight = true;
+        binding.progressArAiInsight.setVisibility(View.VISIBLE);
+        binding.tvArAiInsight.setText(getString(R.string.ar_ai_generating));
+
+        String subject = activeQuizSubject != null && !activeQuizSubject.trim().isEmpty()
+                ? activeQuizSubject.trim() : "General";
+        String wrongTopics = buildWrongTopicsForAi();
+
+        GeminiApiClient.analyzePerformance(subject, correctAnswerCount, selectedQuestions.size(), wrongTopics)
+                .enqueue(new Callback<JsonObject>() {
+                    @Override
+                    public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                        isGeneratingAiInsight = false;
+                        if (binding == null) {
+                            return;
+                        }
+
+                        binding.progressArAiInsight.setVisibility(View.GONE);
+                        if (!response.isSuccessful() || response.body() == null) {
+                            showFallbackAiInsight();
+                            return;
+                        }
+
+                        String insight = extractGeminiText(response.body());
+                        if (insight == null || insight.trim().isEmpty()) {
+                            showFallbackAiInsight();
+                            return;
+                        }
+
+                        binding.tvArAiInsight.setText(insight.trim());
+                    }
+
+                    @Override
+                    public void onFailure(Call<JsonObject> call, Throwable t) {
+                        isGeneratingAiInsight = false;
+                        if (binding == null) {
+                            return;
+                        }
+                        binding.progressArAiInsight.setVisibility(View.GONE);
+                        showFallbackAiInsight();
+                    }
+                });
+    }
+
+    private void showFallbackAiInsight() {
+        if (binding == null) {
+            return;
+        }
+
+        int total = selectedQuestions.size();
+        int percent = total > 0 ? (correctAnswerCount * 100) / total : 0;
+        if (percent >= 80) {
+            binding.tvArAiInsight.setText(getString(R.string.ar_ai_fallback_high));
+        } else if (percent >= 60) {
+            binding.tvArAiInsight.setText(getString(R.string.ar_ai_fallback_mid));
+        } else {
+            binding.tvArAiInsight.setText(getString(R.string.ar_ai_fallback_low));
+        }
+    }
+
+    private String buildWrongTopicsForAi() {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < selectedQuestions.size(); i++) {
+            Question question = selectedQuestions.get(i);
+            String userAnswer = i < userAnswers.size() ? userAnswers.get(i) : null;
+            String correctAnswer = resolveCorrectAnswerLetter(question);
+            if (userAnswer == null || userAnswer.isEmpty() || !userAnswer.equals(correctAnswer)) {
+                builder.append("- ")
+                        .append(nonEmptyOrFallback(question.getQuestionText(), getString(R.string.ar_question_text_fallback)))
+                        .append(" (your: ")
+                        .append(userAnswer == null || userAnswer.isEmpty() ? "-" : userAnswer)
+                        .append(", correct: ")
+                        .append(correctAnswer == null || correctAnswer.isEmpty() ? "-" : correctAnswer)
+                        .append(")\n");
+            }
+        }
+        return builder.toString().trim();
+    }
+
+    private String extractGeminiText(JsonObject body) {
+        if (body == null) {
+            return null;
+        }
+        try {
+            return body.getAsJsonArray("candidates")
+                    .get(0).getAsJsonObject()
+                    .getAsJsonObject("content")
+                    .getAsJsonArray("parts")
+                    .get(0).getAsJsonObject()
+                    .get("text").getAsString();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void saveArQuizAttempt() {
+        String userId = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+        if (userId == null || selectedQuestions.isEmpty()) {
+            return;
+        }
+
+        int total = selectedQuestions.size();
+        int percent = (correctAnswerCount * 100) / total;
+        String quizRef = activeQuizId != null && !activeQuizId.trim().isEmpty()
+                ? activeQuizId : activeQuizSubject;
+
+        QuizAttempt attempt = new QuizAttempt(userId, quizRef, total, correctAnswerCount, percent, 0);
+        attempt.setAttemptId(IdUtil.generateId("attempt"));
+        attempt.setPassed(percent >= 60);
+        attempt.setAnswers(userAnswers.toString());
+        new QuizAttemptRepository(requireContext()).saveQuizAttempt(attempt, userId);
+    }
+
+    private void ensureUserAnswersCapacity(int size) {
+        while (userAnswers.size() < size) {
+            userAnswers.add(null);
+        }
+        while (userAnswers.size() > size) {
+            userAnswers.remove(userAnswers.size() - 1);
+        }
+    }
+
+    private void resetQuizSessionState() {
+        selectedQuestions = new ArrayList<>();
+        selectedQuestionIndex = 0;
+        answeredQuestionCount = 0;
+        correctAnswerCount = 0;
+        currentQuestionAnswered = false;
+        isQuizCompleted = false;
+        questionSessionInitialized = false;
+        noQuestionsToastShown = false;
+        isGeneratingAiInsight = false;
+        userAnswers.clear();
+
+        if (binding != null) {
+            binding.progressArAiInsight.setVisibility(View.GONE);
+            binding.tvArAiInsight.setVisibility(View.GONE);
+            binding.btnNextArQuestion.setText(R.string.ar_next_question);
+        }
+    }
+
+    private void initializeQuizSessionWithQuestions(List<Question> questions) {
+        selectedQuestions = new ArrayList<>(questions);
+        selectedQuestionIndex = 0;
+        answeredQuestionCount = 0;
+        correctAnswerCount = 0;
+        currentQuestionAnswered = false;
+        isQuizCompleted = false;
+        isGeneratingAiInsight = false;
+        ensureUserAnswersCapacity(selectedQuestions.size());
+        updateFlashcardInputFromSelectedQuestion();
+        updateQuestionPanel();
+        questionSessionInitialized = true;
+    }
+
+    private String getSelectedAnswerLetter() {
+        if (binding == null) {
+            return "";
+        }
+
+        int checkedId = binding.rgArOptions.getCheckedRadioButtonId();
+        if (checkedId == binding.rbArOptionA.getId()) return "A";
+        if (checkedId == binding.rbArOptionB.getId()) return "B";
+        if (checkedId == binding.rbArOptionC.getId()) return "C";
+        if (checkedId == binding.rbArOptionD.getId()) return "D";
+        return "";
+    }
+
+    private String resolveCorrectAnswerLetter(Question question) {
+        String directLetter = extractAnswerLetter(question.getCorrectAnswer());
+        if (!directLetter.isEmpty()) {
+            return directLetter;
+        }
+
+        String normalizedAnswer = normalizeComparableText(question.getCorrectAnswer());
+        if (normalizedAnswer.isEmpty()) {
+            return "";
+        }
+
+        if (normalizedAnswer.equals(normalizeComparableText(question.getOptionA()))) return "A";
+        if (normalizedAnswer.equals(normalizeComparableText(question.getOptionB()))) return "B";
+        if (normalizedAnswer.equals(normalizeComparableText(question.getOptionC()))) return "C";
+        if (normalizedAnswer.equals(normalizeComparableText(question.getOptionD()))) return "D";
+
+        return "";
+    }
+
+    private String extractAnswerLetter(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        String normalized = value
+                .trim()
+                .toUpperCase(Locale.US)
+                .replace("(", " ")
+                .replace(")", " ")
+                .replace(".", " ")
+                .replace(":", " ")
+                .replace("_", " ")
+                .replace("-", " ");
+
+        if (normalized.isEmpty()) {
+            return "";
+        }
+
+        String[] tokens = normalized.split("\\s+");
+        for (int i = 0; i < tokens.length; i++) {
+            String token = tokens[i];
+            if ("A".equals(token) || "B".equals(token) || "C".equals(token) || "D".equals(token)) {
+                return token;
+            }
+
+            if (("OPTION".equals(token) || "ANSWER".equals(token)) && i + 1 < tokens.length) {
+                String next = tokens[i + 1];
+                if ("A".equals(next) || "B".equals(next) || "C".equals(next) || "D".equals(next)) {
+                    return next;
+                }
+            }
+        }
+
+        if (tokens.length > 0) {
+            String first = tokens[0];
+            if (first.length() == 1 && "ABCD".contains(first)) {
+                return first;
+            }
+        }
+
+        return "";
+    }
+
+    private String normalizeComparableText(String value) {
+        if (value == null) {
+            return "";
+        }
+        String normalized = value.trim().replaceAll("\\s+", " ").toUpperCase(Locale.US);
+        if (normalized.startsWith("A ") || normalized.startsWith("B ")
+                || normalized.startsWith("C ") || normalized.startsWith("D ")) {
+            normalized = normalized.substring(2).trim();
+        }
+        return normalized;
+    }
+
+    private void updateQuestionPanel() {
+        if (binding == null) {
+            return;
+        }
+
+        Question question = getCurrentQuestion();
+        if (question == null) {
+            binding.tvArQuestionProgress.setText(getString(R.string.ar_question_progress_default));
+            binding.tvArQuestionText.setText(getString(R.string.ar_question_placeholder));
+            binding.rbArOptionA.setText(getString(R.string.ar_option_format, "A", getString(R.string.ar_option_fallback)));
+            binding.rbArOptionB.setText(getString(R.string.ar_option_format, "B", getString(R.string.ar_option_fallback)));
+            binding.rbArOptionC.setText(getString(R.string.ar_option_format, "C", getString(R.string.ar_option_fallback)));
+            binding.rbArOptionD.setText(getString(R.string.ar_option_format, "D", getString(R.string.ar_option_fallback)));
+            binding.rgArOptions.clearCheck();
+            binding.btnSubmitArAnswer.setEnabled(false);
+            binding.btnNextArQuestion.setEnabled(false);
+            binding.btnNextArQuestion.setText(R.string.ar_next_question);
+            setOptionInputsEnabled(false);
+            binding.tvArAnswerFeedback.setText(getString(R.string.ar_no_questions_loaded));
+            updateScoreLabel();
+            return;
+        }
+
+        binding.tvArQuestionProgress.setText(getString(
+                R.string.ar_question_progress,
+                selectedQuestionIndex + 1,
+                selectedQuestions.size()
+        ));
+        binding.tvArQuestionText.setText(nonEmptyOrFallback(
+                question.getQuestionText(),
+                getString(R.string.ar_question_text_fallback)
+        ));
+
+        binding.rbArOptionA.setText(getString(R.string.ar_option_format, "A",
+                nonEmptyOrFallback(question.getOptionA(), getString(R.string.ar_option_fallback))));
+        binding.rbArOptionB.setText(getString(R.string.ar_option_format, "B",
+                nonEmptyOrFallback(question.getOptionB(), getString(R.string.ar_option_fallback))));
+        binding.rbArOptionC.setText(getString(R.string.ar_option_format, "C",
+                nonEmptyOrFallback(question.getOptionC(), getString(R.string.ar_option_fallback))));
+        binding.rbArOptionD.setText(getString(R.string.ar_option_format, "D",
+                nonEmptyOrFallback(question.getOptionD(), getString(R.string.ar_option_fallback))));
+
+        binding.rgArOptions.clearCheck();
+        setOptionInputsEnabled(!isQuizCompleted);
+        currentQuestionAnswered = false;
+        binding.btnSubmitArAnswer.setEnabled(!isQuizCompleted);
+        binding.btnNextArQuestion.setEnabled(false);
+        binding.btnNextArQuestion.setText(isQuizCompleted ? R.string.ar_quiz_completed : R.string.ar_next_question);
+        binding.tvArAnswerFeedback.setText(isQuizCompleted
+            ? getString(R.string.ar_quiz_complete_summary, correctAnswerCount, selectedQuestions.size())
+            : getString(R.string.ar_answer_select_prompt));
+        updateScoreLabel();
+    }
+
+    private String nonEmptyOrFallback(String value, String fallback) {
+        if (value == null || value.trim().isEmpty()) {
+            return fallback;
+        }
+        return value.trim();
+    }
+
+    private void updateScoreLabel() {
+        if (binding == null) {
+            return;
+        }
+        binding.tvArScore.setText(getString(
+                R.string.ar_score_summary,
+                correctAnswerCount,
+                answeredQuestionCount
+        ));
+    }
+
+    private void setOptionInputsEnabled(boolean enabled) {
+        if (binding == null) {
+            return;
+        }
+        binding.rbArOptionA.setEnabled(enabled);
+        binding.rbArOptionB.setEnabled(enabled);
+        binding.rbArOptionC.setEnabled(enabled);
+        binding.rbArOptionD.setEnabled(enabled);
+    }
+
+    private void showTapFocusIndicator(MotionEvent motionEvent) {
+        if (binding == null) {
+            return;
+        }
+
+        View focusRing = binding.viewArFocusRing;
+        focusRing.animate().cancel();
+        focusRing.setVisibility(View.VISIBLE);
+
+        float halfWidth = focusRing.getWidth() > 0 ? focusRing.getWidth() / 2f : dpToPx(32f);
+        float halfHeight = focusRing.getHeight() > 0 ? focusRing.getHeight() / 2f : dpToPx(32f);
+
+        focusRing.setX(motionEvent.getX() - halfWidth);
+        focusRing.setY(motionEvent.getY() - halfHeight);
+        focusRing.setAlpha(0.9f);
+        focusRing.setScaleX(1.25f);
+        focusRing.setScaleY(1.25f);
+
+        focusRing.animate()
+                .alpha(0f)
+                .scaleX(0.85f)
+                .scaleY(0.85f)
+                .setDuration(500)
+                .withEndAction(() -> focusRing.setVisibility(View.GONE))
+                .start();
+    }
+
+    private float dpToPx(float dp) {
+        return dp * requireContext().getResources().getDisplayMetrics().density;
     }
 
     private void setupQuizSelector() {
@@ -319,8 +999,15 @@ public class ArFlashcardFragment extends Fragment {
                 return;
             }
 
-            selectedQuestionIndex = 0;
-            selectedQuestions = new ArrayList<>();
+            activeQuizId = quizId;
+            String selectedSubject = selected.getSubject() != null && !selected.getSubject().trim().isEmpty()
+                    ? selected.getSubject().trim()
+                    : (selected.getTitle() != null && !selected.getTitle().trim().isEmpty()
+                    ? selected.getTitle().trim() : "General");
+            activeQuizSubject = selectedSubject;
+
+            resetQuizSessionState();
+            updateQuestionPanel();
 
             viewModel.syncQuestions(quizId);
             if (questionsLiveData != null) {
@@ -328,11 +1015,38 @@ public class ArFlashcardFragment extends Fragment {
             }
             questionsLiveData = viewModel.getQuestionsForQuiz(quizId);
             questionsLiveData.observe(getViewLifecycleOwner(), questions -> {
-                selectedQuestions = questions != null ? questions : new ArrayList<>();
-                selectedQuestionIndex = 0;
-                updateFlashcardInputFromSelectedQuestion();
-                if (selectedQuestions.isEmpty()) {
-                    Toast.makeText(requireContext(), "No questions found for this quiz", Toast.LENGTH_SHORT).show();
+                List<Question> loadedQuestions = questions != null ? questions : new ArrayList<>();
+
+                if (loadedQuestions.isEmpty()) {
+                    selectedQuestions = new ArrayList<>();
+                    updateFlashcardInputFromSelectedQuestion();
+                    updateQuestionPanel();
+                    if (!questionSessionInitialized && !noQuestionsToastShown) {
+                        noQuestionsToastShown = true;
+                        Toast.makeText(requireContext(), getString(R.string.ar_no_questions_loaded), Toast.LENGTH_SHORT).show();
+                    }
+                    return;
+                }
+
+                if (!questionSessionInitialized) {
+                    initializeQuizSessionWithQuestions(loadedQuestions);
+                    return;
+                }
+
+                // Keep in-progress AR quiz stable across Room re-emissions from sync updates.
+                if (loadedQuestions.size() != selectedQuestions.size()) {
+                    int previousIndex = selectedQuestionIndex;
+                    selectedQuestions = new ArrayList<>(loadedQuestions);
+                    ensureUserAnswersCapacity(selectedQuestions.size());
+                    if (selectedQuestions.isEmpty()) {
+                        selectedQuestionIndex = 0;
+                    } else {
+                        selectedQuestionIndex = Math.min(previousIndex, selectedQuestions.size() - 1);
+                    }
+                    updateFlashcardInputFromSelectedQuestion();
+                    if (!isQuizCompleted) {
+                        updateQuestionPanel();
+                    }
                 }
             });
         });
@@ -340,7 +1054,10 @@ public class ArFlashcardFragment extends Fragment {
 
     private void updateFlashcardInputFromSelectedQuestion() {
         if (binding == null) return;
-        if (selectedQuestions == null || selectedQuestions.isEmpty()) return;
+        if (selectedQuestions == null || selectedQuestions.isEmpty()) {
+            binding.etFlashcardText.setText("");
+            return;
+        }
         if (selectedQuestionIndex < 0 || selectedQuestionIndex >= selectedQuestions.size()) {
             selectedQuestionIndex = 0;
         }
@@ -348,11 +1065,13 @@ public class ArFlashcardFragment extends Fragment {
         if (text != null) binding.etFlashcardText.setText(text);
     }
 
-    private void advanceSelectedQuestionIfNeeded() {
-        if (selectedQuestions == null || selectedQuestions.isEmpty()) return;
+    private boolean advanceSelectedQuestionIfNeeded() {
+        if (selectedQuestions == null || selectedQuestions.isEmpty()) return false;
+        if (selectedQuestionIndex >= selectedQuestions.size() - 1) return false;
         selectedQuestionIndex++;
-        if (selectedQuestionIndex >= selectedQuestions.size()) selectedQuestionIndex = 0;
         updateFlashcardInputFromSelectedQuestion();
+        currentQuestionAnswered = false;
+        return true;
     }
 
     private TextView buildCardView(String text) {
@@ -375,6 +1094,24 @@ public class ArFlashcardFragment extends Fragment {
         binding.arSceneView.setVisibility(View.GONE);
     }
 
+    private void clearPlacedNodes() {
+        if (arSceneView == null) {
+            placedNodes.clear();
+            return;
+        }
+        for (AnchorNode node : placedNodes) {
+            try {
+                arSceneView.getScene().removeChild(node);
+                if (node.getAnchor() != null) {
+                    node.getAnchor().detach();
+                }
+            } catch (Throwable t) {
+                Log.w(TAG, "Failed to clean up AR anchor", t);
+            }
+        }
+        placedNodes.clear();
+    }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -384,8 +1121,9 @@ public class ArFlashcardFragment extends Fragment {
         if (arAvailable && arSceneView != null) {
             try {
                 arSceneView.resume();
-            } catch (Exception e) {
-                showArUnavailable(e.getMessage());
+            } catch (Throwable t) {
+                Log.e(TAG, "Failed to resume AR scene", t);
+                showArUnavailable(getString(R.string.ar_session_not_ready, safeMessage(t)));
             }
         }
     }
@@ -393,15 +1131,29 @@ public class ArFlashcardFragment extends Fragment {
     @Override
     public void onPause() {
         super.onPause();
-        if (arAvailable && arSceneView != null) arSceneView.pause();
+        if (arSceneView != null) {
+            try {
+                arSceneView.pause();
+            } catch (Throwable t) {
+                Log.w(TAG, "Failed to pause AR scene cleanly", t);
+            }
+        }
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (arAvailable && arSceneView != null) arSceneView.destroy();
+        clearPlacedNodes();
+        if (arSceneView != null) {
+            try {
+                arSceneView.destroy();
+            } catch (Throwable t) {
+                Log.w(TAG, "Failed to destroy AR scene cleanly", t);
+            }
+        }
         arAvailable = false;
         sceneTouchListenerAttached = false;
+        arAvailabilityRetryCount = 0;
         arSceneView = null;
         binding = null;
     }

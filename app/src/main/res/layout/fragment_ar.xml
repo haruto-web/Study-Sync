@@ -10,6 +10,13 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <View
+        android:id="@+id/view_ar_focus_ring"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:background="@drawable/bg_ar_focus_ring"
+        android:visibility="gone" />
+
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/card_ar_instruction"
         android:layout_width="wrap_content"
@@ -110,7 +117,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:hint="Flashcard text">
+                        android:hint="Card text">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/et_flashcard_text"
@@ -119,6 +126,154 @@
                             android:maxLines="2"
                             android:minLines="1" />
                     </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/card_ar_question_panel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        app:cardBackgroundColor="#FFFFFFFF"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="1dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+
+                            <TextView
+                                android:id="@+id/tv_ar_question_progress"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/ar_question_progress_default"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tv_ar_question_text"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:text="@string/ar_question_placeholder"
+                                android:textColor="@color/text_primary"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <RadioGroup
+                                android:id="@+id/rg_ar_options"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:orientation="vertical">
+
+                                <RadioButton
+                                    android:id="@+id/rb_ar_option_a"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:minHeight="40dp"
+                                    android:text="A"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="13sp" />
+
+                                <RadioButton
+                                    android:id="@+id/rb_ar_option_b"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:minHeight="40dp"
+                                    android:text="B"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="13sp" />
+
+                                <RadioButton
+                                    android:id="@+id/rb_ar_option_c"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:minHeight="40dp"
+                                    android:text="C"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="13sp" />
+
+                                <RadioButton
+                                    android:id="@+id/rb_ar_option_d"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:minHeight="40dp"
+                                    android:text="D"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="13sp" />
+                            </RadioGroup>
+
+                            <TextView
+                                android:id="@+id/tv_ar_answer_feedback"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="@string/ar_answer_select_prompt"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="13sp" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="10dp"
+                                android:orientation="horizontal">
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btn_submit_ar_answer"
+                                    style="@style/Widget.MaterialComponents.Button"
+                                    android:layout_width="0dp"
+                                    android:layout_height="40dp"
+                                    android:layout_weight="1"
+                                    android:text="@string/ar_submit_answer"
+                                    android:textAllCaps="false"
+                                    android:textSize="12sp"
+                                    app:cornerRadius="12dp" />
+
+                                <Space
+                                    android:layout_width="10dp"
+                                    android:layout_height="1dp" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btn_next_ar_question"
+                                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                    android:layout_width="0dp"
+                                    android:layout_height="40dp"
+                                    android:layout_weight="1"
+                                    android:text="@string/ar_next_question"
+                                    android:textAllCaps="false"
+                                    android:textSize="12sp"
+                                    app:cornerRadius="12dp" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/tv_ar_score"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="@string/ar_score_default"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="12sp" />
+
+                            <ProgressBar
+                                android:id="@+id/progress_ar_ai_insight"
+                                style="?android:attr/progressBarStyleSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:visibility="gone" />
+
+                            <TextView
+                                android:id="@+id/tv_ar_ai_insight"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="@string/ar_ai_insight_placeholder"
+                                android:textColor="@color/text_primary"
+                                android:textSize="13sp"
+                                android:visibility="gone" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
                     <LinearLayout
                         android:layout_width="match_parent"

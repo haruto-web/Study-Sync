@@ -10,6 +10,18 @@
         <item>Grade 8</item>
         <item>Grade 9</item>
         <item>Grade 10</item>
+        <item>Grade 11</item>
+        <item>Grade 12</item>
+    </string-array>
+
+    <string-array name="shs_strands">
+        <item>STEM (Science, Technology, Engineering, Mathematics)</item>
+        <item>ABM (Accountancy, Business, Management)</item>
+        <item>HUMSS (Humanities and Social Sciences)</item>
+        <item>GAS (General Academic Strand)</item>
+        <item>TVL (Technical-Vocational-Livelihood)</item>
+        <item>Sports Track</item>
+        <item>Arts and Design Track</item>
     </string-array>
 
     <string-array name="study_goals">
@@ -25,5 +37,21 @@
         <item>Science</item>
         <item>Filipino</item>
         <item>Araling Panlipunan</item>
+        <item>General Mathematics</item>
+        <item>Statistics and Probability</item>
+        <item>Pre-Calculus</item>
+        <item>Basic Calculus</item>
+        <item>Earth and Life Science</item>
+        <item>Physical Science</item>
+        <item>Oral Communication</item>
+        <item>Reading and Writing</item>
+        <item>21st Century Literature</item>
+        <item>Contemporary Philippine Arts</item>
+        <item>Media and Information Literacy</item>
+        <item>Personal Development</item>
+        <item>Understanding Culture, Society and Politics</item>
+        <item>Introduction to Philosophy</item>
+        <item>Business Mathematics</item>
+        <item>Fundamentals of Accountancy</item>
     </string-array>
 </resources>

@@ -45,8 +45,25 @@ public class ReadyModuleAdapter extends RecyclerView.Adapter<ReadyModuleAdapter.
     public void onBindViewHolder(@NonNull VH holder, int position) {
         ReadyModule module = items.get(position);
         holder.binding.tvTitle.setText(module.title);
-        holder.binding.tvMeta.setText(module.gradeLevel + " • " + module.subject + " • " + module.topic);
+        holder.binding.tvMeta.setText(module.gradeLevel + " \u2022 " + module.subject + " \u2022 " + module.topic);
         holder.binding.tvDescription.setText(module.description);
+
+        if (module.difficulty != null && !module.difficulty.isEmpty()) {
+            holder.binding.tvDifficulty.setText(module.difficulty);
+            holder.binding.tvDifficulty.setVisibility(android.view.View.VISIBLE);
+        } else {
+            holder.binding.tvDifficulty.setVisibility(android.view.View.GONE);
+        }
+
+        if (module.lessons != null && !module.lessons.isEmpty()) {
+            holder.binding.tvLessonsLabel.setVisibility(android.view.View.VISIBLE);
+            holder.binding.tvLessons.setVisibility(android.view.View.VISIBLE);
+            holder.binding.tvLessons.setText(module.lessons);
+        } else {
+            holder.binding.tvLessonsLabel.setVisibility(android.view.View.GONE);
+            holder.binding.tvLessons.setVisibility(android.view.View.GONE);
+        }
+
         holder.binding.getRoot().setOnClickListener(v -> listener.onModuleClick(module));
         holder.binding.btnGenerate.setOnClickListener(v -> listener.onModuleClick(module));
     }

@@ -468,6 +468,190 @@ public final class ReadyModuleCatalog {
                 "Kontemporaryong isyu: mga suliraning kinakaharap ngayon (hal. kahirapan, klima, disinformation).\n\nPag-aaral:\n- Ano ang sanhi?\n- Sino ang apektado?\n- Ano ang posibleng solusyon?\n\nGumamit ng mapagkakatiwalaang sanggunian at iwasan ang maling impormasyon."
         ));
 
+        // ── SHS STEM ──────────────────────────────────────────────────────────
+        modules.add(shs("shs_stem_precalc", "Pre-Calculus Fundamentals",
+                "Grade 11", "STEM", "Pre-Calculus", "Functions & Trigonometry",
+                "Master functions, conic sections, and trigonometric identities.",
+                "Pre-Calculus bridges algebra and calculus.\n\n" +
+                "Functions:\n- A function maps each input to exactly one output.\n- Notation: f(x) = 2x + 1\n\n" +
+                "Conic Sections:\n- Circle: (x-h)² + (y-k)² = r²\n- Parabola: y = ax² + bx + c\n- Ellipse and Hyperbola have two foci.\n\n" +
+                "Trigonometry:\n- sin, cos, tan relate angles to side ratios in right triangles.\n- Unit circle: radius 1, angles in radians.\n- Key identity: sin²θ + cos²θ = 1\n\n" +
+                "Practice: Sketch f(x) = x² − 4 and identify vertex, axis of symmetry, and intercepts.",
+                "Intermediate",
+                "• What is a Function?\n• Domain and Range\n• Conic Sections Overview\n• Trigonometric Ratios\n• Unit Circle and Radian Measure\n• Trigonometric Identities"));
+
+        modules.add(shs("shs_stem_calculus", "Basic Calculus",
+                "Grade 12", "STEM", "Basic Calculus", "Limits, Derivatives & Integrals",
+                "Understand limits, differentiation, and basic integration.",
+                "Calculus studies change and accumulation.\n\n" +
+                "Limits:\n- lim(x→2) of x² = 4\n- Limits describe what a function approaches.\n\n" +
+                "Derivatives (rate of change):\n- d/dx [xⁿ] = nxⁿ⁻¹  (Power Rule)\n- d/dx [x³] = 3x²\n- Derivative = slope of tangent line.\n\n" +
+                "Integration (area under curve):\n- ∫xⁿ dx = xⁿ⁺¹/(n+1) + C\n- ∫x² dx = x³/3 + C\n\n" +
+                "Fundamental Theorem: differentiation and integration are inverse operations.",
+                "Advanced",
+                "• Concept of Limits\n• Evaluating Limits Algebraically\n• Definition of the Derivative\n• Differentiation Rules\n• Applications of Derivatives\n• Introduction to Integration\n• Definite vs Indefinite Integrals"));
+
+        modules.add(shs("shs_stem_stats", "Statistics and Probability",
+                "Grade 11", "STEM", "Statistics and Probability", "Data Analysis",
+                "Analyze data using descriptive statistics and probability rules.",
+                "Statistics helps us make sense of data.\n\n" +
+                "Descriptive Statistics:\n- Mean: sum ÷ count\n- Median: middle value\n- Mode: most frequent\n- Standard Deviation: spread of data\n\n" +
+                "Probability:\n- P(A) = favorable / total outcomes\n- P(A or B) = P(A) + P(B) − P(A and B)\n- Independent events: P(A and B) = P(A) × P(B)\n\n" +
+                "Normal Distribution: bell curve, 68% of data within 1 standard deviation of mean.",
+                "Intermediate",
+                "• Types of Data\n• Measures of Central Tendency\n• Measures of Spread\n• Basic Probability Rules\n• Conditional Probability\n• Normal Distribution"));
+
+        modules.add(shs("shs_stem_gen_bio", "General Biology",
+                "Grade 11", "STEM", "Science", "Cell Biology & Genetics",
+                "Explore cell structure, DNA, and basic genetics.",
+                "Biology is the study of life.\n\n" +
+                "Cell Structure:\n- Cell membrane: controls what enters/exits\n- Nucleus: contains DNA\n- Mitochondria: produces energy (ATP)\n- Ribosomes: make proteins\n\n" +
+                "DNA and Genetics:\n- DNA is a double helix made of nucleotides (A, T, G, C).\n- Genes are segments of DNA that code for traits.\n- Dominant allele (B) masks recessive allele (b).\n- Punnett square predicts offspring ratios.\n\n" +
+                "Mitosis: cell division for growth (produces 2 identical cells).\nMeiosis: produces 4 sex cells with half the chromosomes.",
+                "Intermediate",
+                "• Cell Theory\n• Cell Organelles and Functions\n• DNA Structure and Replication\n• Mendelian Genetics\n• Punnett Squares\n• Mitosis vs Meiosis"));
+
+        modules.add(shs("shs_stem_physics", "Physical Science: Physics",
+                "Grade 11", "STEM", "Physical Science", "Motion & Forces",
+                "Apply Newton's laws and kinematics to real-world problems.",
+                "Physics explains how the physical world works.\n\n" +
+                "Kinematics (motion without forces):\n- Speed = distance / time\n- Velocity includes direction\n- Acceleration = change in velocity / time\n\n" +
+                "Newton's Laws:\n1) An object at rest stays at rest unless acted on by a force.\n2) F = ma (Force = mass × acceleration)\n3) Every action has an equal and opposite reaction.\n\n" +
+                "Work and Energy:\n- Work = Force × distance\n- Kinetic Energy = ½mv²\n- Potential Energy = mgh",
+                "Intermediate",
+                "• Scalars vs Vectors\n• Kinematics Equations\n• Newton's First Law\n• Newton's Second Law (F=ma)\n• Newton's Third Law\n• Work, Energy, and Power"));
+
+        // ── SHS ABM ──────────────────────────────────────────────────────────
+        modules.add(shs("shs_abm_gen_math", "General Mathematics",
+                "Grade 11", "ABM", "General Mathematics", "Functions & Business Math",
+                "Apply functions, interest, and annuities to business contexts.",
+                "General Mathematics connects algebra to real-world finance.\n\n" +
+                "Functions:\n- Linear: f(x) = mx + b (straight line)\n- Quadratic: f(x) = ax² + bx + c (parabola)\n\n" +
+                "Simple Interest: I = Prt\n- P = principal, r = rate, t = time\n- Example: P=10000, r=5%, t=2 years → I = 1000\n\n" +
+                "Compound Interest: A = P(1 + r/n)^(nt)\n\n" +
+                "Annuities: series of equal payments at regular intervals.\n- Used in loans, savings plans, and insurance.",
+                "Beginner",
+                "• Functions and Their Graphs\n• Simple Interest\n• Compound Interest\n• Annuities\n• Loans and Amortization\n• Basic Logic and Propositions"));
+
+        modules.add(shs("shs_abm_fundamentals_acctg", "Fundamentals of Accountancy",
+                "Grade 11", "ABM", "Fundamentals of Accountancy", "Accounting Cycle",
+                "Learn the accounting equation, journals, and financial statements.",
+                "Accounting records and reports financial transactions.\n\n" +
+                "Accounting Equation: Assets = Liabilities + Owner's Equity\n\n" +
+                "Steps in the Accounting Cycle:\n1) Identify transactions\n2) Record in journal (debit/credit)\n3) Post to ledger\n4) Prepare trial balance\n5) Prepare financial statements\n\n" +
+                "Financial Statements:\n- Income Statement: revenues − expenses = net income\n- Balance Sheet: assets = liabilities + equity\n- Cash Flow Statement: tracks cash in and out.\n\n" +
+                "Debit increases assets/expenses; Credit increases liabilities/equity.",
+                "Beginner",
+                "• Accounting Equation\n• Types of Accounts\n• Journal Entries (Debit & Credit)\n• Ledger and T-Accounts\n• Trial Balance\n• Income Statement\n• Balance Sheet"));
+
+        modules.add(shs("shs_abm_business_math", "Business Mathematics",
+                "Grade 11", "ABM", "Business Mathematics", "Profit, Loss & Markup",
+                "Compute profit, loss, markup, markdown, and break-even.",
+                "Business math applies arithmetic to commerce.\n\n" +
+                "Key Formulas:\n- Profit = Revenue − Cost\n- Markup = Selling Price − Cost\n- Markup % = (Markup / Cost) × 100\n- Markdown = Original Price − Sale Price\n\n" +
+                "Break-Even Point: when total revenue = total cost.\n- BEP (units) = Fixed Costs / (Price − Variable Cost per unit)\n\n" +
+                "Percentage problems:\n- What is 15% of 2000? → 0.15 × 2000 = 300\n- 300 is what % of 2000? → (300/2000) × 100 = 15%",
+                "Beginner",
+                "• Fractions, Decimals, Percentages\n• Profit and Loss\n• Markup and Markdown\n• Break-Even Analysis\n• Payroll and Wages\n• Commissions and Discounts"));
+
+        // ── SHS HUMSS ─────────────────────────────────────────────────────────
+        modules.add(shs("shs_humss_oral_comm", "Oral Communication in Context",
+                "Grade 11", "HUMSS", "Oral Communication", "Communication Models",
+                "Understand communication models and deliver effective speeches.",
+                "Communication is the exchange of information between sender and receiver.\n\n" +
+                "Models of Communication:\n- Linear: sender → message → receiver\n- Interactive: adds feedback loop\n- Transactional: simultaneous sending and receiving\n\n" +
+                "Elements: sender, message, channel, receiver, feedback, noise, context.\n\n" +
+                "Speech Delivery Tips:\n- Articulate clearly and vary your pace\n- Use appropriate volume and tone\n- Maintain eye contact\n- Use gestures purposefully\n\n" +
+                "Types of speeches: informative, persuasive, entertaining.",
+                "Beginner",
+                "• Nature and Elements of Communication\n• Models of Communication\n• Types of Communication\n• Verbal vs Non-Verbal\n• Barriers to Communication\n• Effective Speech Delivery"));
+
+        modules.add(shs("shs_humss_reading_writing", "Reading and Writing Skills",
+                "Grade 11", "HUMSS", "Reading and Writing", "Academic Writing",
+                "Read critically and write well-structured academic texts.",
+                "Academic reading and writing are core skills for higher education.\n\n" +
+                "Critical Reading:\n- Identify the author's purpose and argument\n- Distinguish fact from opinion\n- Evaluate evidence and logical reasoning\n\n" +
+                "Academic Writing Structure:\n- Introduction: background + thesis statement\n- Body: topic sentence + evidence + analysis\n- Conclusion: restate thesis + synthesis\n\n" +
+                "Thesis Statement: one sentence that states your main argument.\nExample: 'Social media negatively affects student focus because it promotes constant distraction.'\n\n" +
+                "Citation: always credit your sources (APA, MLA, Chicago).",
+                "Intermediate",
+                "• Active Reading Strategies\n• Identifying Thesis and Arguments\n• Fact vs Opinion\n• Writing a Thesis Statement\n• Paragraph Development\n• Academic Essay Structure\n• In-text Citation Basics"));
+
+        modules.add(shs("shs_humss_ucsp", "Understanding Culture, Society and Politics",
+                "Grade 11", "HUMSS", "Understanding Culture, Society and Politics", "Socialization & Culture",
+                "Explore how culture, society, and politics shape human behavior.",
+                "UCSP examines human life through anthropology, sociology, and political science.\n\n" +
+                "Culture: shared beliefs, values, practices of a group.\n- Material culture: objects (tools, clothing)\n- Non-material culture: language, religion, norms\n\n" +
+                "Socialization: process of learning norms and values.\n- Agents: family, school, peers, media\n\n" +
+                "Social Stratification: ranking of people by wealth, power, prestige.\n\n" +
+                "Government: system that makes and enforces rules.\n- Democracy, Monarchy, Dictatorship are types of government.",
+                "Beginner",
+                "• Anthropology, Sociology, Political Science\n• Culture and Its Elements\n• Socialization Agents\n• Social Groups and Institutions\n• Social Stratification\n• Forms of Government"));
+
+        modules.add(shs("shs_humss_philo", "Introduction to Philosophy",
+                "Grade 12", "HUMSS", "Introduction to Philosophy", "Logic & Ethics",
+                "Think critically using philosophical reasoning and ethical frameworks.",
+                "Philosophy is the love of wisdom — it asks fundamental questions.\n\n" +
+                "Branches:\n- Metaphysics: nature of reality\n- Epistemology: nature of knowledge\n- Ethics: what is right and wrong\n- Logic: rules of correct reasoning\n\n" +
+                "Logic:\n- Deductive: if premises are true, conclusion must be true.\n  Example: All humans are mortal. Socrates is human. ∴ Socrates is mortal.\n- Inductive: conclusion is probable based on evidence.\n\n" +
+                "Ethical Theories:\n- Utilitarianism: greatest good for the greatest number\n- Deontology (Kant): duty-based ethics\n- Virtue Ethics: focus on character",
+                "Intermediate",
+                "• What is Philosophy?\n• Branches of Philosophy\n• Deductive and Inductive Reasoning\n• Logical Fallacies\n• Ethical Theories\n• Applying Ethics to Real Situations"));
+
+        // ── SHS GAS ───────────────────────────────────────────────────────────
+        modules.add(shs("shs_gas_media_info", "Media and Information Literacy",
+                "Grade 11", "GAS", "Media and Information Literacy", "Media Literacy",
+                "Evaluate media messages and use information responsibly.",
+                "Media and Information Literacy (MIL) helps you navigate the information age.\n\n" +
+                "Types of Media:\n- Print: newspapers, books\n- Broadcast: TV, radio\n- Digital/New Media: social media, websites\n\n" +
+                "Evaluating Information (CRAAP Test):\n- Currency: is it recent?\n- Relevance: does it fit your need?\n- Authority: who wrote it?\n- Accuracy: is it supported by evidence?\n- Purpose: why was it created?\n\n" +
+                "Disinformation vs Misinformation:\n- Misinformation: false info shared without intent to deceive\n- Disinformation: false info shared deliberately\n\n" +
+                "Tip: Always cross-check with multiple credible sources.",
+                "Beginner",
+                "• What is Media Literacy?\n• Types of Media\n• Evaluating Sources (CRAAP Test)\n• Fake News and Disinformation\n• Responsible Social Media Use\n• Creating Responsible Content"));
+
+        modules.add(shs("shs_gas_personal_dev", "Personal Development",
+                "Grade 11", "GAS", "Personal Development", "Self-Awareness & Goal Setting",
+                "Understand yourself and build habits for growth and success.",
+                "Personal Development is about knowing yourself and growing intentionally.\n\n" +
+                "Self-Awareness:\n- Know your strengths, weaknesses, values, and emotions.\n- Johari Window: a tool to understand self vs how others see you.\n\n" +
+                "Emotional Intelligence (EQ):\n- Self-awareness, self-regulation, motivation, empathy, social skills.\n- High EQ leads to better relationships and decisions.\n\n" +
+                "Goal Setting (SMART Goals):\n- Specific, Measurable, Achievable, Relevant, Time-bound\n- Example: 'I will study Math for 30 minutes every day for 2 weeks.'\n\n" +
+                "Habits: small consistent actions compound into big results over time.",
+                "Beginner",
+                "• Self-Concept and Identity\n• Strengths and Weaknesses\n• Emotional Intelligence\n• Stress and Coping Strategies\n• SMART Goal Setting\n• Building Positive Habits"));
+
+        // ── SHS TVL ───────────────────────────────────────────────────────────
+        modules.add(shs("shs_tvl_ict_cs", "Computer Systems Servicing",
+                "Grade 11", "TVL", "Science", "Hardware & Networking",
+                "Learn PC hardware components, assembly, and basic networking.",
+                "Computer Systems Servicing covers hardware, software, and networks.\n\n" +
+                "Hardware Components:\n- CPU: processes instructions\n- RAM: temporary memory\n- HDD/SSD: permanent storage\n- Motherboard: connects all components\n- PSU: power supply unit\n\n" +
+                "Assembly Steps:\n1) Ground yourself (anti-static)\n2) Install CPU on motherboard\n3) Insert RAM\n4) Mount motherboard in case\n5) Connect storage and power cables\n\n" +
+                "Networking Basics:\n- LAN: local area network (home/school)\n- IP Address: unique identifier for each device\n- Router: directs traffic between networks\n- Protocols: TCP/IP, HTTP, FTP",
+                "Beginner",
+                "• Computer Hardware Overview\n• CPU, RAM, Storage\n• PC Assembly Steps\n• Operating System Basics\n• Network Types (LAN, WAN)\n• IP Addressing and Protocols"));
+
+        modules.add(shs("shs_tvl_programming", "Introduction to Programming",
+                "Grade 12", "TVL", "Science", "Programming Basics",
+                "Write basic programs using variables, loops, and functions.",
+                "Programming is giving instructions to a computer.\n\n" +
+                "Core Concepts:\n- Variable: stores a value (int age = 16;)\n- Data Types: int, float, String, boolean\n- Operators: +, -, *, /, % (modulo)\n\n" +
+                "Control Flow:\n- if/else: make decisions\n- for loop: repeat a fixed number of times\n- while loop: repeat while condition is true\n\n" +
+                "Functions: reusable blocks of code.\n  void greet() { System.out.println(\"Hello!\"); }\n\n" +
+                "Example (Java):\nfor (int i = 1; i <= 5; i++) {\n  System.out.println(i);\n}\nOutput: 1 2 3 4 5",
+                "Beginner",
+                "• What is Programming?\n• Variables and Data Types\n• Operators and Expressions\n• Conditional Statements (if/else)\n• Loops (for, while)\n• Functions/Methods\n• Basic Debugging"));
+
         return Collections.unmodifiableList(modules);
+    }
+
+    // Helper for SHS modules with strand, difficulty, and lessons
+    private static ReadyModule shs(
+            String id, String title, String grade, String strand,
+            String subject, String topic, String description,
+            String content, String difficulty, String lessons
+    ) {
+        return new ReadyModule(id, title, grade, strand, subject, topic, description, content, difficulty, lessons);
     }
 }

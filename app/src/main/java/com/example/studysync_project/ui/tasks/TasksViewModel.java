@@ -29,8 +29,8 @@ public class TasksViewModel extends ViewModel {
      * Get all tasks for user
      */
     public LiveData<List<Task>> getAllTasksForUser(String userId) {
-        activeTasks = taskRepository.getActiveTasksForUser(userId);
-        return activeTasks;
+        allTasks = taskRepository.getAllTasksForUser(userId);
+        return allTasks;
     }
 
     /**

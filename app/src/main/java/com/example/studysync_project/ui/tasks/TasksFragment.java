@@ -19,8 +19,10 @@ import com.example.studysync_project.utils.IdUtil;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.auth.FirebaseAuth;
 
+import java.util.ArrayList;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
 
 public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickListener {
@@ -30,6 +32,8 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
     private TaskAdapter adapter;
     private String userId;
     private final Calendar selectedDueDate = Calendar.getInstance();
+    private final List<Task> cachedTasks = new ArrayList<>();
+    private int selectedFilterTab = 0;
 
     @Nullable
     @Override
@@ -62,33 +66,18 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
         binding.rvTasks.setAdapter(adapter);
 
         viewModel.getAllTasksForUser(userId).observe(getViewLifecycleOwner(), tasks -> {
-            if (tasks != null && !tasks.isEmpty()) {
-                adapter.submitList(tasks);
-                binding.emptyState.setVisibility(View.GONE);
-                binding.rvTasks.setVisibility(View.VISIBLE);
-            } else {
-                binding.rvTasks.setVisibility(View.GONE);
-                binding.emptyState.setVisibility(View.VISIBLE);
+            cachedTasks.clear();
+            if (tasks != null) {
+                cachedTasks.addAll(tasks);
             }
+            renderTasksForActiveFilter();
         });
 
         binding.tabsFilter.addOnTabSelectedListener(new com.google.android.material.tabs.TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(com.google.android.material.tabs.TabLayout.Tab tab) {
-                switch (tab.getPosition()) {
-                    case 0:
-                        viewModel.getAllTasksForUser(userId).observe(getViewLifecycleOwner(), tasks -> adapter.submitList(tasks));
-                        break;
-                    case 1:
-                        viewModel.getAllTasksForUser(userId).observe(getViewLifecycleOwner(), tasks -> {
-                            if (tasks != null)
-                                adapter.submitList(tasks.stream().filter(t -> !t.isCompleted()).toList());
-                        });
-                        break;
-                    case 2:
-                        viewModel.getCompletedTasks(userId).observe(getViewLifecycleOwner(), tasks -> adapter.submitList(tasks));
-                        break;
-                }
+                selectedFilterTab = tab.getPosition();
+                renderTasksForActiveFilter();
             }
 
             @Override
@@ -147,10 +136,38 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
                         Toast.makeText(requireContext(), "Title is required", Toast.LENGTH_SHORT).show();
                         return;
                     }
+                    if (title.length() > 80) {
+                        Toast.makeText(requireContext(), "Keep the title under 80 characters", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    Calendar dueDay = (Calendar) selectedDueDate.clone();
+                    dueDay.set(Calendar.HOUR_OF_DAY, 0);
+                    dueDay.set(Calendar.MINUTE, 0);
+                    dueDay.set(Calendar.SECOND, 0);
+                    dueDay.set(Calendar.MILLISECOND, 0);
+
+                    Calendar today = Calendar.getInstance();
+                    today.set(Calendar.HOUR_OF_DAY, 0);
+                    today.set(Calendar.MINUTE, 0);
+                    today.set(Calendar.SECOND, 0);
+                    today.set(Calendar.MILLISECOND, 0);
+
+                    if (dueDay.before(today)) {
+                        Toast.makeText(requireContext(), "Due date cannot be in the past", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
                     String description = dialogBinding.etDescription.getText() != null
                             ? dialogBinding.etDescription.getText().toString().trim() : "";
-                    String category = dialogBinding.etCategory.getText() != null
-                            ? dialogBinding.etCategory.getText().toString().trim() : "General";
+                    if (description.length() > 280) {
+                        Toast.makeText(requireContext(), "Keep the description under 280 characters", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    String categoryInput = dialogBinding.etCategory.getText() != null
+                            ? dialogBinding.etCategory.getText().toString().trim() : "";
+                    String category = categoryInput.isEmpty() ? "General" : categoryInput;
                     String priority = getPriority(dialogBinding);
 
                     if (existingTask == null) {
@@ -171,6 +188,31 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private void renderTasksForActiveFilter() {
+        if (binding == null) {
+            return;
+        }
+
+        List<Task> filtered = new ArrayList<>();
+        for (Task task : cachedTasks) {
+            if (task == null) {
+                continue;
+            }
+            if (selectedFilterTab == 1 && task.isCompleted()) {
+                continue;
+            }
+            if (selectedFilterTab == 2 && !task.isCompleted()) {
+                continue;
+            }
+            filtered.add(task);
+        }
+
+        adapter.submitList(filtered);
+        boolean isEmpty = filtered.isEmpty();
+        binding.emptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+        binding.rvTasks.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
     }
 
     private String getPriority(DialogCreateTaskBinding b) {

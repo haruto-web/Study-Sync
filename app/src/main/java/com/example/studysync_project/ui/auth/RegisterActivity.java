@@ -2,6 +2,7 @@ package com.example.studysync_project.ui.auth;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Patterns;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -22,6 +23,8 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.Locale;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -56,8 +59,12 @@ public class RegisterActivity extends AppCompatActivity {
         binding.btnBack.setOnClickListener(v -> finish());
         binding.btnRegister.setOnClickListener(v -> registerUser());
         binding.tvLogin.setOnClickListener(v -> finish());
-        binding.btnGoogleSignIn.setOnClickListener(v ->
-            googleSignInLauncher.launch(googleSignInClient.getSignInIntent()));
+        binding.btnGoogleSignIn.setOnClickListener(v -> {
+            if (!isTermsAccepted()) {
+                return;
+            }
+            googleSignInLauncher.launch(googleSignInClient.getSignInIntent());
+        });
     }
 
     private void firebaseAuthWithGoogle(GoogleSignInAccount account) {
@@ -100,10 +107,22 @@ public class RegisterActivity extends AppCompatActivity {
         String password = binding.etPassword.getText().toString().trim();
         String confirmPassword = binding.etConfirmPassword.getText().toString().trim();
 
+        binding.etName.setError(null);
+        binding.etEmail.setError(null);
+        binding.etPassword.setError(null);
+        binding.etConfirmPassword.setError(null);
+
+        if (!isTermsAccepted()) {
+            return;
+        }
+
         if (name.isEmpty()) { binding.etName.setError("Full name is required"); return; }
+        if (name.length() < 2) { binding.etName.setError("Enter at least 2 characters"); return; }
         if (email.isEmpty()) { binding.etEmail.setError("Email is required"); return; }
+        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) { binding.etEmail.setError("Enter a valid email address"); return; }
         if (password.isEmpty()) { binding.etPassword.setError("Password is required"); return; }
         if (password.length() < 6) { binding.etPassword.setError("Password must be at least 6 characters"); return; }
+        if (confirmPassword.isEmpty()) { binding.etConfirmPassword.setError("Confirm your password"); return; }
         if (!password.equals(confirmPassword)) { binding.etConfirmPassword.setError("Passwords do not match"); return; }
 
         auth.createUserWithEmailAndPassword(email, password)
@@ -126,11 +145,20 @@ public class RegisterActivity extends AppCompatActivity {
             })
             .addOnFailureListener(e -> {
                 String errorMsg = e.getMessage();
-                if (errorMsg != null && errorMsg.contains("already in use")) {
+                String normalizedMsg = errorMsg != null ? errorMsg.toLowerCase(Locale.US) : "";
+                if (normalizedMsg.contains("already in use")) {
                     binding.etEmail.setError("Email is already registered");
                 } else {
                     Toast.makeText(this, "Registration failed: " + errorMsg, Toast.LENGTH_SHORT).show();
                 }
             });
+    }
+
+    private boolean isTermsAccepted() {
+        if (binding.cbTerms.isChecked()) {
+            return true;
+        }
+        Toast.makeText(this, "Please agree to the Terms & Conditions first", Toast.LENGTH_SHORT).show();
+        return false;
     }
 }

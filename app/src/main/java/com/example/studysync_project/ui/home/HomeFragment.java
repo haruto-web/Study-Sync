@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment;
 
 import com.example.studysync_project.R;
 import com.example.studysync_project.data.model.StudyModule;
+import com.example.studysync_project.data.model.UserProfile;
 import com.example.studysync_project.data.repository.QuizAttemptRepository;
 import com.example.studysync_project.data.repository.StudyModuleRepository;
 import com.example.studysync_project.data.repository.TaskRepository;
@@ -23,18 +24,22 @@ import com.example.studysync_project.data.repository.UserRepository;
 import com.example.studysync_project.databinding.FragmentHomeBinding;
 import com.example.studysync_project.ui.auth.LoginActivity;
 import com.example.studysync_project.ui.profile.ProfileActivity;
+import com.example.studysync_project.ui.progress.ProgressActivity;
 import com.example.studysync_project.ui.quiz.ModuleDetailActivity;
 import com.example.studysync_project.ui.quiz.StudyModuleAdapter;
 import com.example.studysync_project.ui.quiz.UploadModuleActivity;
 import com.example.studysync_project.utils.ConsentManager;
 import com.example.studysync_project.utils.ReadyModuleCatalog;
 import com.example.studysync_project.data.progression.ProgressionRepository;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class HomeFragment extends Fragment {
 
@@ -52,6 +57,14 @@ public class HomeFragment extends Fragment {
     private static final int ACTION_UPLOAD = 0;
     private static final int ACTION_READY_MODULE = 1;
     private static final int ACTION_SAVED_MODULE = 2;
+    private static final String[][] BADGE_DEFINITIONS = new String[][]{
+            {"STREAK_3", "3-Day Streak", "Study on 3 consecutive days."},
+            {"STREAK_7", "7-Day Streak", "Study on 7 consecutive days."},
+            {"STREAK_14", "14-Day Streak", "Study on 14 consecutive days."},
+            {"QUIZ_ACE_80", "Quiz Ace", "Average at least 80% across 3 recent quiz attempts."},
+            {"MOMENTUM_70", "Momentum 70", "Reach a progression index of 70."},
+            {"MOMENTUM_85", "Momentum 85", "Reach a progression index of 85."}
+    };
 
     private Double latestAverageScore;
     private String latestProgressStateLabel;
@@ -68,6 +81,7 @@ public class HomeFragment extends Fragment {
     private String profileGoal;
     private String profileSubject;
     private String profileTopicsCsv;
+    private final Set<String> unlockedBadges = new LinkedHashSet<>();
 
     @Nullable
     @Override
@@ -172,6 +186,7 @@ public class HomeFragment extends Fragment {
                 latestStreakDays = 0;
                 latestWeeklyStudyMinutes = 0;
                 latestWeeklyQuizAverage = 0.0;
+                updateBadgeState(null);
                 updateRecommendationCard();
                 return;
             }
@@ -220,6 +235,7 @@ public class HomeFragment extends Fragment {
 
             latestProgressStateLabel = stateLabel;
             latestProgressIndex = roundedIndex;
+            updateBadgeState(profile);
             updateRecommendationCard();
         });
     }
@@ -519,6 +535,80 @@ public class HomeFragment extends Fragment {
         binding.btnLogout.setOnClickListener(v -> showLogoutConfirmation());
         binding.cardAvatar.setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), ProfileActivity.class)));
+        binding.cardHomeOverview.setOnClickListener(v -> openProgressAnalytics());
+        binding.layoutOpenAnalytics.setOnClickListener(v -> openProgressAnalytics());
+        binding.tvWeeklyAnalytics.setOnClickListener(v -> openProgressAnalytics());
+        binding.progressWeeklyStudy.setOnClickListener(v -> openProgressAnalytics());
+        binding.btnBadgeNotice.setOnClickListener(v -> showBadgeCenter());
+    }
+
+    private void openProgressAnalytics() {
+        startActivity(new Intent(requireContext(), ProgressActivity.class));
+    }
+
+    private void updateBadgeState(@Nullable UserProfile profile) {
+        unlockedBadges.clear();
+        if (profile != null) {
+            String badgesCsv = profile.getUnlockedBadgesCsv() != null
+                    ? profile.getUnlockedBadgesCsv().trim()
+                    : "";
+            if (!badgesCsv.isEmpty()) {
+                for (String rawPart : badgesCsv.split(",")) {
+                    String badge = rawPart != null ? rawPart.trim() : "";
+                    if (!badge.isEmpty()) {
+                        unlockedBadges.add(badge);
+                    }
+                }
+            }
+        }
+        updateBadgeNoticeUi();
+    }
+
+    private void updateBadgeNoticeUi() {
+        if (binding == null) {
+            return;
+        }
+
+        int count = unlockedBadges.size();
+        if (count > 0) {
+            binding.tvBadgeNoticeCount.setVisibility(View.VISIBLE);
+            binding.tvBadgeNoticeCount.setText(String.valueOf(Math.min(count, 99)));
+            binding.btnBadgeNotice.setContentDescription(getString(R.string.home_badge_notice_icon_desc_count, count));
+        } else {
+            binding.tvBadgeNoticeCount.setVisibility(View.GONE);
+            binding.btnBadgeNotice.setContentDescription(getString(R.string.home_badge_notice_icon_desc));
+        }
+    }
+
+    private void showBadgeCenter() {
+        StringBuilder message = new StringBuilder();
+        message.append(getString(
+                R.string.home_badge_dialog_progress,
+                unlockedBadges.size(),
+                BADGE_DEFINITIONS.length
+        ));
+
+        if (unlockedBadges.isEmpty()) {
+            message.append("\n\n").append(getString(R.string.home_badge_dialog_empty_hint));
+        }
+
+        message.append("\n\n").append(getString(R.string.home_badge_dialog_section_title));
+        for (String[] badge : BADGE_DEFINITIONS) {
+            boolean unlocked = unlockedBadges.contains(badge[0]);
+            message.append("\n\n")
+                    .append(unlocked ? "[Unlocked] " : "[Locked] ")
+                    .append(badge[1])
+                    .append("\n")
+                    .append(badge[2]);
+        }
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.home_badge_dialog_title)
+                .setMessage(message.toString())
+                .setPositiveButton(R.string.home_badge_dialog_open_profile, (dialog, which) ->
+                        startActivity(new Intent(requireContext(), ProfileActivity.class)))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
     private void showLogoutConfirmation() {

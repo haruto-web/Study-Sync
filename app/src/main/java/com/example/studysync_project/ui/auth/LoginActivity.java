@@ -2,6 +2,7 @@ package com.example.studysync_project.ui.auth;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Patterns;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -22,6 +23,8 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.Locale;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -92,11 +95,22 @@ public class LoginActivity extends AppCompatActivity {
         String email = binding.etEmail.getText().toString().trim();
         String password = binding.etPassword.getText().toString().trim();
 
+        binding.etEmail.setError(null);
+        binding.etPassword.setError(null);
+
         if (email.isEmpty()) { binding.etEmail.setError("Email is required"); return; }
+        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            binding.etEmail.setError("Enter a valid email address");
+            return;
+        }
         if (password.isEmpty()) { binding.etPassword.setError("Password is required"); return; }
 
         auth.signInWithEmailAndPassword(email, password)
             .addOnSuccessListener(r -> {
+                if (r.getUser() == null) {
+                    Toast.makeText(this, "Sign in failed: missing user profile", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 if (!r.getUser().isEmailVerified()) {
                     Toast.makeText(this, "Please verify your email before signing in.", Toast.LENGTH_LONG).show();
                     startActivity(new Intent(this, VerifyEmailActivity.class));
@@ -107,9 +121,10 @@ public class LoginActivity extends AppCompatActivity {
             })
             .addOnFailureListener(e -> {
                 String errorMsg = e.getMessage();
-                if (errorMsg != null && errorMsg.contains("user")) {
+                String normalizedMsg = errorMsg != null ? errorMsg.toLowerCase(Locale.US) : "";
+                if (normalizedMsg.contains("user") || normalizedMsg.contains("no user record")) {
                     binding.etEmail.setError("User not found");
-                } else if (errorMsg != null && errorMsg.contains("password")) {
+                } else if (normalizedMsg.contains("password") || normalizedMsg.contains("credential")) {
                     binding.etPassword.setError("Incorrect password");
                 } else {
                     Toast.makeText(this, "Sign in failed: " + errorMsg, Toast.LENGTH_SHORT).show();
@@ -119,8 +134,13 @@ public class LoginActivity extends AppCompatActivity {
 
     private void resetPassword() {
         String email = binding.etEmail.getText().toString().trim();
+        binding.etEmail.setError(null);
         if (email.isEmpty()) {
             Toast.makeText(this, "Enter your email to reset password", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            binding.etEmail.setError("Enter a valid email address");
             return;
         }
         auth.sendPasswordResetEmail(email)

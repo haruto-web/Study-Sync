@@ -26,6 +26,8 @@ import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
+import com.github.mikephil.charting.highlight.Highlight;
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.text.SimpleDateFormat;
@@ -38,6 +40,8 @@ public class ProgressActivity extends AppCompatActivity {
 
     private ActivityProgressBinding binding;
     private String userId;
+    private int activeTaskCount;
+    private int completedTaskCount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +56,7 @@ public class ProgressActivity extends AppCompatActivity {
         }
 
         binding.toolbar.setNavigationOnClickListener(v -> finish());
+        binding.tvInteractiveInsight.setText(getString(com.example.studysync_project.R.string.progress_interactive_hint));
 
         loadSummaryStats();
         loadProgressionSummary();
@@ -173,9 +178,32 @@ public class ProgressActivity extends AppCompatActivity {
             binding.chartStudyTime.getXAxis().setValueFormatter(new IndexAxisValueFormatter(dayLabels));
             binding.chartStudyTime.getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM);
             binding.chartStudyTime.getXAxis().setGranularity(1f);
+            binding.chartStudyTime.getXAxis().setDrawGridLines(false);
             binding.chartStudyTime.getAxisRight().setEnabled(false);
             binding.chartStudyTime.getDescription().setEnabled(false);
             binding.chartStudyTime.getLegend().setEnabled(false);
+            binding.chartStudyTime.setFitBars(true);
+            binding.chartStudyTime.setPinchZoom(false);
+            binding.chartStudyTime.setScaleEnabled(false);
+            binding.chartStudyTime.setOnChartValueSelectedListener(new OnChartValueSelectedListener() {
+                @Override
+                public void onValueSelected(Entry e, Highlight h) {
+                    int index = Math.round(e.getX());
+                    if (index < 0 || index >= dayLabels.length) {
+                        return;
+                    }
+                    setInteractiveInsight(getString(
+                            com.example.studysync_project.R.string.progress_interactive_study_format,
+                            dayLabels[index],
+                            Math.round(e.getY())
+                    ));
+                }
+
+                @Override
+                public void onNothingSelected() {
+                    setInteractiveInsight(getString(com.example.studysync_project.R.string.progress_interactive_hint));
+                }
+            });
             binding.chartStudyTime.animateY(600);
             binding.chartStudyTime.invalidate();
         });
@@ -208,6 +236,24 @@ public class ProgressActivity extends AppCompatActivity {
             binding.chartQuizScores.getLegend().setEnabled(false);
             binding.chartQuizScores.getAxisLeft().setAxisMinimum(0f);
             binding.chartQuizScores.getAxisLeft().setAxisMaximum(100f);
+            binding.chartQuizScores.setPinchZoom(false);
+            binding.chartQuizScores.setScaleEnabled(false);
+            binding.chartQuizScores.setOnChartValueSelectedListener(new OnChartValueSelectedListener() {
+                @Override
+                public void onValueSelected(Entry e, Highlight h) {
+                    int attemptNumber = Math.max(1, Math.round(e.getX()) + 1);
+                    setInteractiveInsight(getString(
+                            com.example.studysync_project.R.string.progress_interactive_quiz_format,
+                            attemptNumber,
+                            Math.round(e.getY())
+                    ));
+                }
+
+                @Override
+                public void onNothingSelected() {
+                    setInteractiveInsight(getString(com.example.studysync_project.R.string.progress_interactive_hint));
+                }
+            });
             binding.chartQuizScores.animateX(600);
             binding.chartQuizScores.invalidate();
         });
@@ -216,27 +262,67 @@ public class ProgressActivity extends AppCompatActivity {
     private void loadTaskPieChart() {
         TaskRepository taskRepo = new TaskRepository(this);
         taskRepo.getActiveTaskCountForUser(userId).observe(this, active -> {
-            taskRepo.getCompletedTaskCountForUser(userId).observe(this, completed -> {
-                int a = active != null ? active : 0;
-                int c = completed != null ? completed : 0;
-                if (a == 0 && c == 0) return;
-
-                List<PieEntry> entries = new ArrayList<>();
-                if (c > 0) entries.add(new PieEntry(c, "Done"));
-                if (a > 0) entries.add(new PieEntry(a, "Pending"));
-
-                PieDataSet dataSet = new PieDataSet(entries, "");
-                dataSet.setColors(0xFF6750A4, 0xFFE8DEF8);
-                dataSet.setValueTextColor(Color.WHITE);
-                dataSet.setValueTextSize(12f);
-
-                binding.chartTasks.setData(new PieData(dataSet));
-                binding.chartTasks.getDescription().setEnabled(false);
-                binding.chartTasks.setHoleRadius(40f);
-                binding.chartTasks.setTransparentCircleRadius(45f);
-                binding.chartTasks.animateY(600);
-                binding.chartTasks.invalidate();
-            });
+            activeTaskCount = active != null ? active : 0;
+            bindTaskPieChart();
         });
+        taskRepo.getCompletedTaskCountForUser(userId).observe(this, completed -> {
+            completedTaskCount = completed != null ? completed : 0;
+            bindTaskPieChart();
+        });
+    }
+
+    private void bindTaskPieChart() {
+        int a = activeTaskCount;
+        int c = completedTaskCount;
+
+        if (a == 0 && c == 0) {
+            binding.chartTasks.clear();
+            binding.chartTasks.setNoDataText(getString(com.example.studysync_project.R.string.progress_no_tasks_data));
+            binding.chartTasks.invalidate();
+            return;
+        }
+
+        List<PieEntry> entries = new ArrayList<>();
+        if (c > 0) entries.add(new PieEntry(c, "Done"));
+        if (a > 0) entries.add(new PieEntry(a, "Pending"));
+
+        PieDataSet dataSet = new PieDataSet(entries, "");
+        dataSet.setColors(0xFF6750A4, 0xFFE8DEF8);
+        dataSet.setValueTextColor(Color.WHITE);
+        dataSet.setValueTextSize(12f);
+
+        binding.chartTasks.setData(new PieData(dataSet));
+        binding.chartTasks.getDescription().setEnabled(false);
+        binding.chartTasks.setHoleRadius(40f);
+        binding.chartTasks.setTransparentCircleRadius(45f);
+        binding.chartTasks.setOnChartValueSelectedListener(new OnChartValueSelectedListener() {
+            @Override
+            public void onValueSelected(Entry e, Highlight h) {
+                if (!(e instanceof PieEntry)) {
+                    return;
+                }
+                PieEntry entry = (PieEntry) e;
+                setInteractiveInsight(getString(
+                        com.example.studysync_project.R.string.progress_interactive_tasks_format,
+                        entry.getLabel(),
+                        Math.round(entry.getValue())
+                ));
+            }
+
+            @Override
+            public void onNothingSelected() {
+                setInteractiveInsight(getString(com.example.studysync_project.R.string.progress_interactive_hint));
+            }
+        });
+        binding.chartTasks.animateY(600);
+        binding.chartTasks.invalidate();
+    }
+
+    private void setInteractiveInsight(String message) {
+        if (message == null || message.trim().isEmpty()) {
+            binding.tvInteractiveInsight.setText(getString(com.example.studysync_project.R.string.progress_interactive_hint));
+            return;
+        }
+        binding.tvInteractiveInsight.setText(message);
     }
 }

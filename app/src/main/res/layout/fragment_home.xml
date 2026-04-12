@@ -104,11 +104,15 @@
                 android:textStyle="bold" />
 
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_home_overview"
                 style="@style/Widget.StudySync.Card.Surface"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:layout_marginBottom="18dp">
+                android:layout_marginBottom="18dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -284,6 +288,41 @@
                             android:text="Starting"
                             android:textColor="@color/text_secondary"
                             android:textSize="12sp" />
+
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="1dp"
+                            android:layout_weight="1" />
+
+                        <FrameLayout
+                            android:layout_width="36dp"
+                            android:layout_height="36dp">
+
+                            <ImageButton
+                                android:id="@+id/btn_badge_notice"
+                                android:layout_width="36dp"
+                                android:layout_height="36dp"
+                                android:background="@android:color/transparent"
+                                android:contentDescription="@string/home_badge_notice_icon_desc"
+                                android:padding="8dp"
+                                android:src="@drawable/ic_notifications"
+                                android:tint="@color/primary" />
+
+                            <TextView
+                                android:id="@+id/tv_badge_notice_count"
+                                android:layout_width="18dp"
+                                android:layout_height="18dp"
+                                android:layout_gravity="top|end"
+                                android:background="@drawable/bg_badge_notice_dot"
+                                android:gravity="center"
+                                android:includeFontPadding="false"
+                                android:minWidth="18dp"
+                                android:text="0"
+                                android:textColor="@color/on_error"
+                                android:textSize="10sp"
+                                android:textStyle="bold"
+                                android:visibility="gone" />
+                        </FrameLayout>
                     </LinearLayout>
 
                     <TextView
@@ -313,6 +352,37 @@
                         android:progress="0"
                         app:indicatorColor="@color/primary"
                         app:trackColor="@color/primary_container" />
+
+                    <LinearLayout
+                        android:id="@+id/layout_open_analytics"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="2dp"
+                        android:paddingVertical="2dp">
+
+                        <TextView
+                            android:id="@+id/tv_open_analytics"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/home_open_full_analytics"
+                            android:textColor="@color/primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <ImageView
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
+                            android:layout_marginStart="4dp"
+                            android:contentDescription="@string/home_open_full_analytics"
+                            android:src="@drawable/ic_arrow_forward"
+                            android:tint="@color/primary" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

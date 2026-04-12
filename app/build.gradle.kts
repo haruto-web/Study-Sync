@@ -80,6 +80,10 @@ dependencies {
     // Charts
     implementation(libs.mpandroidchart)
 
+    // Face detection support (used by FaceDetectionUtil)
+    implementation("androidx.camera:camera-core:1.4.2")
+    implementation("com.google.mlkit:face-detection:16.1.7")
+
     // ARCore + Sceneform (exclude legacy support lib that conflicts with AndroidX)
     implementation(libs.arcore)
     implementation("com.google.ar.sceneform.ux:sceneform-ux:1.17.1") {

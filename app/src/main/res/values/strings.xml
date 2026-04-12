@@ -82,9 +82,23 @@
     <string name="home_study_today_with_sessions_format">%1$s today • %2$d sessions</string>
     <string name="home_weekly_metrics_format">Last 7d: %1$s study • %2$.0f%% quiz avg</string>
     <string name="home_modules_summary_format">Saved modules: %1$d • Showing latest %2$d</string>
+    <string name="home_open_full_analytics">Open full analytics</string>
+    <string name="home_badge_notice_icon_desc">Badge center</string>
+    <string name="home_badge_notice_icon_desc_count">Badge center, %1$d unlocked</string>
+    <string name="home_badge_dialog_title">Badges and Milestones</string>
+    <string name="home_badge_dialog_progress">Unlocked: %1$d/%2$d</string>
+    <string name="home_badge_dialog_empty_hint">No badges unlocked yet. Keep studying this week to unlock your first milestone.</string>
+    <string name="home_badge_dialog_section_title">Badge checklist</string>
+    <string name="home_badge_dialog_open_profile">Open profile</string>
     <string name="home_action_continue_saved_module">Continue Saved Module</string>
     <string name="home_action_review_saved_module">Review Saved Module</string>
     <string name="home_action_open_recommended_module">Open Recommended Module</string>
+
+    <string name="progress_interactive_hint">Tap any chart value to inspect details.</string>
+    <string name="progress_interactive_study_format">%1$s: %2$d minutes studied</string>
+    <string name="progress_interactive_quiz_format">Attempt %1$d: %2$d%% score</string>
+    <string name="progress_interactive_tasks_format">%1$s tasks: %2$d</string>
+    <string name="progress_no_tasks_data">No task data yet.</string>
 
     <string name="quiz_result_generate_module_button">Generate AI Study Module</string>
     <string name="quiz_result_generating_module">Generating module...</string>
@@ -99,6 +113,8 @@
     <string name="quiz_result_generated_module_title">AI Personalized Module: %1$s</string>
 
     <string name="generate_module_topic_required">Enter what you are studying or interested in.</string>
+    <string name="generate_module_topic_too_long">Keep this field under %1$d characters.</string>
+    <string name="generate_module_goal_too_long">Keep the learning goal under %1$d characters.</string>
     <string name="generate_module_loading">Gemini is generating your module...</string>
     <string name="generate_module_failed">Could not generate a module right now. Please try again.</string>
     <string name="generate_module_empty">Gemini returned an empty module. Please try again.</string>
@@ -108,4 +124,7 @@
     <string name="generate_module_description">AI-generated module based on your current study topic and interests.</string>
     <string name="generate_module_no_generated_content">Generate a module first.</string>
     <string name="generate_module_no_saved_module">No saved module yet.</string>
+    <string name="generate_module_question_count_required">Enter the number of quiz questions.</string>
+    <string name="generate_module_question_count_invalid">Question count must be a number.</string>
+    <string name="generate_module_question_count_range">Question count must be between %1$d and %2$d.</string>
 </resources>

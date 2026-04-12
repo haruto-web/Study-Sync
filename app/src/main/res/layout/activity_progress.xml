@@ -173,6 +173,15 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <TextView
+                android:id="@+id/tv_interactive_insight"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                android:text="Tap any chart value to inspect details."
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+
             <!-- Study time bar chart -->
             <TextView
                 android:layout_width="wrap_content"

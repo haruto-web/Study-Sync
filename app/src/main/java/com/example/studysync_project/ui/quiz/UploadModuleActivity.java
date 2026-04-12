@@ -8,6 +8,7 @@ import android.provider.OpenableColumns;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -39,6 +40,10 @@ import retrofit2.Response;
 
 public class UploadModuleActivity extends AppCompatActivity {
 
+    private static final int MIN_QUESTION_COUNT = 5;
+    private static final int MAX_QUESTION_COUNT = 15;
+    private static final int MAX_SUBJECT_LENGTH = 80;
+
     public static final String EXTRA_MODULE_ID = "extra_module_id";
     public static final String EXTRA_MODULE_SOURCE_TYPE = "extra_module_source_type";
     public static final String EXTRA_MODULE_SOURCE_REF = "extra_module_source_ref";
@@ -53,8 +58,12 @@ public class UploadModuleActivity extends AppCompatActivity {
             registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
                 if (uri == null) return;
                 selectedFileUri = uri;
-                getContentResolver().takePersistableUriPermission(uri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                try {
+                    getContentResolver().takePersistableUriPermission(uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                } catch (SecurityException ignored) {
+                    // Some document providers do not grant persistable permission.
+                }
                 binding.tvFileName.setText(getFileName(uri));
             });
     private String extractedText;
@@ -121,20 +130,13 @@ public class UploadModuleActivity extends AppCompatActivity {
             return;
         }
 
-        String subject = binding.etSubject.getText() != null
-                ? binding.etSubject.getText().toString().trim() : "";
-        if (subject.isEmpty()) {
-            binding.etSubject.setError("Please enter a subject");
+        binding.etSubject.setError(null);
+        binding.etQuestionCount.setError(null);
+
+        String subject = validateSubjectInput();
+        Integer questionCount = validateQuestionCountInput();
+        if (subject == null || questionCount == null) {
             return;
-        }
-        String countStr = binding.etQuestionCount.getText() != null
-                ? binding.etQuestionCount.getText().toString().trim() : "10";
-        int questionCount = 10;
-        try {
-            questionCount = Integer.parseInt(countStr);
-            if (questionCount < 5) questionCount = 5;
-            if (questionCount > 15) questionCount = 15;
-        } catch (NumberFormatException ignored) {
         }
 
         int finalCount = questionCount;
@@ -441,6 +443,49 @@ public class UploadModuleActivity extends AppCompatActivity {
         if (text == null) return "";
         if (text.length() <= maxLen) return text;
         return text.substring(0, maxLen);
+    }
+
+    @Nullable
+    private String validateSubjectInput() {
+        String subject = binding.etSubject.getText() != null
+                ? binding.etSubject.getText().toString().trim()
+                : "";
+        if (subject.isEmpty()) {
+            binding.etSubject.setError("Please enter a subject");
+            return null;
+        }
+        if (subject.length() > MAX_SUBJECT_LENGTH) {
+            binding.etSubject.setError("Keep the subject under " + MAX_SUBJECT_LENGTH + " characters");
+            return null;
+        }
+        return subject;
+    }
+
+    @Nullable
+    private Integer validateQuestionCountInput() {
+        String countStr = binding.etQuestionCount.getText() != null
+                ? binding.etQuestionCount.getText().toString().trim()
+                : "";
+        if (countStr.isEmpty()) {
+            binding.etQuestionCount.setError("Enter the number of questions");
+            return null;
+        }
+
+        int questionCount;
+        try {
+            questionCount = Integer.parseInt(countStr);
+        } catch (NumberFormatException ignored) {
+            binding.etQuestionCount.setError("Question count must be a number");
+            return null;
+        }
+
+        if (questionCount < MIN_QUESTION_COUNT || questionCount > MAX_QUESTION_COUNT) {
+            binding.etQuestionCount.setError("Question count must be between "
+                    + MIN_QUESTION_COUNT + " and " + MAX_QUESTION_COUNT);
+            return null;
+        }
+
+        return questionCount;
     }
 
     private String getFileName(Uri uri) {

@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.studysync_project.BuildConfig;
@@ -27,6 +28,11 @@ import retrofit2.Response;
  * Allows users to ask Gemini for a topic-based study module and optionally convert it to a quiz.
  */
 public class GenerateModuleActivity extends AppCompatActivity {
+
+    private static final int MIN_QUESTION_COUNT = 5;
+    private static final int MAX_QUESTION_COUNT = 15;
+    private static final int MAX_TOPIC_LENGTH = 80;
+    private static final int MAX_GOAL_LENGTH = 180;
 
     private ActivityGenerateModuleBinding binding;
     private StudyModuleRepository studyModuleRepository;
@@ -68,8 +74,24 @@ public class GenerateModuleActivity extends AppCompatActivity {
         String learningGoal = textOrEmpty(binding.etLearningGoal.getText() != null
                 ? binding.etLearningGoal.getText().toString() : null);
 
+        binding.etCurrentTopic.setError(null);
+        binding.etInterestTopic.setError(null);
+        binding.etLearningGoal.setError(null);
+
         if (currentTopic.isEmpty() && interestTopic.isEmpty()) {
             binding.etCurrentTopic.setError(getString(R.string.generate_module_topic_required));
+            return;
+        }
+        if (!currentTopic.isEmpty() && currentTopic.length() > MAX_TOPIC_LENGTH) {
+            binding.etCurrentTopic.setError(getString(R.string.generate_module_topic_too_long, MAX_TOPIC_LENGTH));
+            return;
+        }
+        if (!interestTopic.isEmpty() && interestTopic.length() > MAX_TOPIC_LENGTH) {
+            binding.etInterestTopic.setError(getString(R.string.generate_module_topic_too_long, MAX_TOPIC_LENGTH));
+            return;
+        }
+        if (!learningGoal.isEmpty() && learningGoal.length() > MAX_GOAL_LENGTH) {
+            binding.etLearningGoal.setError(getString(R.string.generate_module_goal_too_long, MAX_GOAL_LENGTH));
             return;
         }
 
@@ -166,7 +188,10 @@ public class GenerateModuleActivity extends AppCompatActivity {
             return;
         }
 
-        int questionCount = parseQuestionCount();
+        Integer questionCount = validateQuestionCount();
+        if (questionCount == null) {
+            return;
+        }
 
         Intent intent = new Intent(this, UploadModuleActivity.class);
         intent.putExtra(UploadModuleActivity.EXTRA_MODULE_ID, generatedModuleId);
@@ -190,18 +215,34 @@ public class GenerateModuleActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    private int parseQuestionCount() {
+    @Nullable
+    private Integer validateQuestionCount() {
         String countText = binding.etQuestionCount.getText() != null
                 ? binding.etQuestionCount.getText().toString().trim()
                 : "10";
-        int questionCount = 10;
+
+        binding.etQuestionCount.setError(null);
+        if (countText.isEmpty()) {
+            binding.etQuestionCount.setError(getString(R.string.generate_module_question_count_required));
+            return null;
+        }
+
+        int questionCount;
         try {
             questionCount = Integer.parseInt(countText);
         } catch (NumberFormatException ignored) {
+            binding.etQuestionCount.setError(getString(R.string.generate_module_question_count_invalid));
+            return null;
         }
 
-        if (questionCount < 5) questionCount = 5;
-        if (questionCount > 15) questionCount = 15;
+        if (questionCount < MIN_QUESTION_COUNT || questionCount > MAX_QUESTION_COUNT) {
+            binding.etQuestionCount.setError(getString(
+                    R.string.generate_module_question_count_range,
+                    MIN_QUESTION_COUNT,
+                    MAX_QUESTION_COUNT
+            ));
+            return null;
+        }
         return questionCount;
     }
 

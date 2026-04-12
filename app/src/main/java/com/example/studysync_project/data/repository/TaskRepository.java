@@ -7,6 +7,7 @@ import androidx.lifecycle.LiveData;
 import com.example.studysync_project.data.db.AppDatabase;
 import com.example.studysync_project.data.db.dao.TaskDao;
 import com.example.studysync_project.data.model.Task;
+import com.example.studysync_project.data.progression.ProgressionRepository;
 import com.example.studysync_project.utils.AppExecutors;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -15,10 +16,12 @@ import java.util.List;
 public class TaskRepository {
     private final TaskDao taskDao;
     private final FirebaseFirestore firestore;
+    private final ProgressionRepository progressionRepository;
 
     public TaskRepository(Context context) {
         this.taskDao = AppDatabase.getInstance(context).taskDao();
         this.firestore = FirebaseFirestore.getInstance();
+        this.progressionRepository = new ProgressionRepository(context);
     }
 
     public LiveData<List<Task>> getAllTasksForUser(String userId) {
@@ -56,6 +59,7 @@ public class TaskRepository {
         // Sync to Firestore
         firestore.collection("tasks").document(task.getTaskId()).set(task)
                 .addOnFailureListener(Throwable::printStackTrace);
+        progressionRepository.recomputeProgressionAsync(userId);
     }
 
     public void updateTask(Task task) {
@@ -63,6 +67,9 @@ public class TaskRepository {
         AppExecutors.diskIO().execute(() -> taskDao.updateTask(task));
         firestore.collection("tasks").document(task.getTaskId()).set(task)
                 .addOnFailureListener(Throwable::printStackTrace);
+        if (task.getUserId() != null) {
+            progressionRepository.recomputeProgressionAsync(task.getUserId());
+        }
     }
 
     public void completeTask(String taskId) {
@@ -72,12 +79,21 @@ public class TaskRepository {
                 task.setCompleted(true);
                 taskDao.updateTask(task);
                 firestore.collection("tasks").document(taskId).set(task);
+                if (task.getUserId() != null) {
+                    progressionRepository.recomputeAndPersistForSync(task.getUserId());
+                }
             }
         });
     }
 
     public void deleteTask(String taskId) {
-        AppExecutors.diskIO().execute(() -> taskDao.deleteTaskById(taskId));
+        AppExecutors.diskIO().execute(() -> {
+            Task task = taskDao.getTaskByIdSync(taskId);
+            taskDao.deleteTaskById(taskId);
+            if (task != null && task.getUserId() != null) {
+                progressionRepository.recomputeAndPersistForSync(task.getUserId());
+            }
+        });
         firestore.collection("tasks").document(taskId).delete();
     }
 
@@ -85,7 +101,10 @@ public class TaskRepository {
         firestore.collection("tasks").whereEqualTo("userId", userId).get()
                 .addOnSuccessListener(snap -> {
                     List<Task> tasks = snap.toObjects(Task.class);
-                    AppExecutors.diskIO().execute(() -> taskDao.insertAllTasks(tasks));
+                    AppExecutors.diskIO().execute(() -> {
+                        taskDao.insertAllTasks(tasks);
+                        progressionRepository.recomputeAndPersistForSync(userId);
+                    });
                 })
                 .addOnFailureListener(Throwable::printStackTrace);
     }

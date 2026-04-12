@@ -2,6 +2,7 @@ package com.example.studysync_project.data.model;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 import com.google.firebase.firestore.PropertyName;
 
@@ -46,6 +47,7 @@ public class TimerSession {
         this.sessionId = "";
     }
 
+    @Ignore
     public TimerSession(String userId, int durationMinutes, String subject, String notes) {
         this.sessionId = "";
         this.userId = userId;

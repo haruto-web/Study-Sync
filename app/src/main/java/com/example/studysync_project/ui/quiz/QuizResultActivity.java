@@ -1,7 +1,9 @@
 package com.example.studysync_project.ui.quiz;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.text.InputType;
 import android.view.View;
 import android.widget.EditText;
@@ -14,8 +16,11 @@ import com.example.studysync_project.BuildConfig;
 import com.example.studysync_project.R;
 import com.example.studysync_project.data.model.QuizAttempt;
 import com.example.studysync_project.data.model.StudyModule;
+import com.example.studysync_project.data.model.UserProfile;
+import com.example.studysync_project.data.progression.ProgressionRepository;
 import com.example.studysync_project.data.repository.QuizAttemptRepository;
 import com.example.studysync_project.data.repository.StudyModuleRepository;
+import com.example.studysync_project.data.repository.UserRepository;
 import com.example.studysync_project.databinding.ActivityQuizResultBinding;
 import com.example.studysync_project.utils.GeminiApiClient;
 import com.example.studysync_project.utils.IdUtil;
@@ -25,6 +30,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.gson.JsonObject;
 
 import java.util.ArrayList;
+import java.util.Locale;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -53,7 +59,7 @@ public class QuizResultActivity extends AppCompatActivity {
         String quizId = getIntent().getStringExtra(EXTRA_QUIZ_ID);
         String subject = getIntent().getStringExtra(EXTRA_SUBJECT);
         ArrayList<String> wrongQuestions = getIntent().getStringArrayListExtra(EXTRA_WRONG_QUESTIONS);
-        ArrayList<Bundle> questions = getIntent().getParcelableArrayListExtra(EXTRA_QUESTIONS);
+        ArrayList<Bundle> questions = getParcelableArrayListExtraCompat(getIntent(), EXTRA_QUESTIONS, Bundle.class);
         ArrayList<String> userAnswers = getIntent().getStringArrayListExtra(EXTRA_USER_ANSWERS);
 
         int percent = (score * 100) / total;
@@ -67,6 +73,7 @@ public class QuizResultActivity extends AppCompatActivity {
 
         // Save attempt
         saveAttempt(score, total, percent, quizId, subject);
+        observeProgressionHint();
 
         // Get AI feedback
         String wrongTopics = buildWrongTopicsForAi(questions, userAnswers);
@@ -311,6 +318,57 @@ public class QuizResultActivity extends AppCompatActivity {
         new QuizAttemptRepository(this).saveQuizAttempt(attempt, userId);
     }
 
+    private void observeProgressionHint() {
+        String userId = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+        if (userId == null) {
+            binding.tvProgressionHint.setText("Progression will update after sign in.");
+            return;
+        }
+
+        new UserRepository(this).getUserProfile(userId).observe(this, this::bindProgressionHint);
+    }
+
+    private void bindProgressionHint(UserProfile profile) {
+        if (profile == null) {
+            binding.tvProgressionHint.setText("Updating your progression...");
+            return;
+        }
+
+        String state = ProgressionRepository.formatStateLabel(profile.getProgressionState());
+        double delta = profile.getProgressionDelta();
+
+        if ("Improving".equals(state) && delta > 0.0) {
+            binding.tvProgressionHint.setText(String.format(
+                    Locale.getDefault(),
+                    "Momentum up %+.1f. Keep your streak alive.",
+                    delta
+            ));
+            return;
+        }
+
+        if ("Declining".equals(state) && delta < 0.0) {
+            binding.tvProgressionHint.setText(String.format(
+                    Locale.getDefault(),
+                    "Momentum dipped %.1f. Review weak topics and retake soon.",
+                    delta
+            ));
+            return;
+        }
+
+        if ("Stable".equals(state)) {
+            binding.tvProgressionHint.setText("Momentum is stable. A focused session can push you higher.");
+            return;
+        }
+
+        if ("Inactive".equals(state)) {
+            binding.tvProgressionHint.setText("Resume daily practice to rebuild momentum.");
+            return;
+        }
+
+        binding.tvProgressionHint.setText("Build activity this week to unlock a clearer progression trend.");
+    }
+
     private void exportResultPdf(String subject, int score, int total, int percent) {
         java.util.List<String> lines = new java.util.ArrayList<>();
         lines.add("Subject: " + (subject != null ? subject : "N/A"));
@@ -408,5 +466,18 @@ public class QuizResultActivity extends AppCompatActivity {
         } catch (Exception e) {
             return null;
         }
+    }
+
+        @SuppressWarnings("deprecation")
+        private static <T extends Parcelable> ArrayList<T> getParcelableArrayListExtraCompat(
+            Intent intent,
+            String key,
+            Class<T> clazz
+    ) {
+        if (intent == null) return null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            return intent.getParcelableArrayListExtra(key, clazz);
+        }
+        return intent.getParcelableArrayListExtra(key);
     }
 }

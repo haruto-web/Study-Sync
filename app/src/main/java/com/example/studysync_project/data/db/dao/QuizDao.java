@@ -39,6 +39,9 @@ public interface QuizDao {
     @Query("SELECT * FROM quizzes WHERE quizId = :quizId")
     Quiz getQuizByIdSync(String quizId);
 
+    @Query("SELECT subject FROM quizzes WHERE quizId = :quizId LIMIT 1")
+    String getQuizSubjectByIdSync(String quizId);
+
     @Query("SELECT * FROM quizzes WHERE userId = :userId AND isArchived = 0 ORDER BY createdAt DESC")
     LiveData<List<Quiz>> getAllQuizzesForUser(String userId);
 

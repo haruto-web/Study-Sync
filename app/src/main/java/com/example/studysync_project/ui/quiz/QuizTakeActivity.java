@@ -1,7 +1,9 @@
 package com.example.studysync_project.ui.quiz;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.widget.RadioButton;
 import android.widget.Toast;
 
@@ -32,7 +34,7 @@ public class QuizTakeActivity extends AppCompatActivity {
 
         subject = getIntent().getStringExtra(EXTRA_SUBJECT);
         quizId = getIntent().getStringExtra(EXTRA_QUIZ_ID);
-        questions = getIntent().getParcelableArrayListExtra(EXTRA_QUESTIONS);
+        questions = getParcelableArrayListExtraCompat(getIntent(), EXTRA_QUESTIONS, Bundle.class);
 
         if (questions == null || questions.isEmpty()) {
             finish();
@@ -147,5 +149,18 @@ public class QuizTakeActivity extends AppCompatActivity {
         if (arr == null) return list;
         for (String s : arr) list.add(s);
         return list;
+    }
+
+        @SuppressWarnings("deprecation")
+        private static <T extends Parcelable> ArrayList<T> getParcelableArrayListExtraCompat(
+            Intent intent,
+            String key,
+            Class<T> clazz
+    ) {
+        if (intent == null) return null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            return intent.getParcelableArrayListExtra(key, clazz);
+        }
+        return intent.getParcelableArrayListExtra(key);
     }
 }

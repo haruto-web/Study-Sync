@@ -63,6 +63,18 @@ public interface TaskDao {
     @Query("SELECT COUNT(*) FROM tasks WHERE userId = :userId AND isCompleted = 1")
     LiveData<Integer> getCompletedTaskCountForUser(String userId);
 
+    @Query("SELECT COUNT(*) FROM tasks WHERE userId = :userId")
+    int getTotalTaskCountForUserSync(String userId);
+
+    @Query("SELECT COUNT(*) FROM tasks WHERE userId = :userId AND isCompleted = 1")
+    int getCompletedTaskCountForUserSync(String userId);
+
+    @Query("SELECT completedAt FROM tasks WHERE userId = :userId AND isCompleted = 1 AND completedAt >= :since")
+    List<Long> getCompletedTaskTimestampsSinceSync(String userId, long since);
+
+    @Query("SELECT MAX(completedAt) FROM tasks WHERE userId = :userId AND isCompleted = 1")
+    Long getLatestCompletedTaskTimestampSync(String userId);
+
     @Query("DELETE FROM tasks WHERE userId = :userId")
     void deleteAllTasksForUser(String userId);
 

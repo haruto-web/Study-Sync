@@ -2,22 +2,22 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/homeFragment"
-        android:icon="@android:drawable/ic_menu_today"
+        android:icon="@drawable/ic_home"
         android:title="Home" />
     <item
         android:id="@+id/tasksFragment"
-        android:icon="@android:drawable/ic_menu_agenda"
+        android:icon="@drawable/ic_task_list"
         android:title="Tasks" />
     <item
         android:id="@+id/timerFragment"
-        android:icon="@android:drawable/ic_menu_recent_history"
+        android:icon="@drawable/ic_timer"
         android:title="Timer" />
     <item
         android:id="@+id/quizFragment"
-        android:icon="@android:drawable/ic_menu_help"
+        android:icon="@drawable/ic_quiz"
         android:title="Study" />
     <item
         android:id="@+id/arFragment"
-        android:icon="@android:drawable/ic_menu_camera"
+        android:icon="@drawable/ic_ar"
         android:title="AR" />
 </menu>

@@ -10,22 +10,31 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.example.studysync_project.R;
+import com.example.studysync_project.data.model.StudyModule;
 import com.example.studysync_project.data.repository.QuizAttemptRepository;
+import com.example.studysync_project.data.repository.StudyModuleRepository;
 import com.example.studysync_project.data.repository.TaskRepository;
 import com.example.studysync_project.data.repository.TimerRepository;
+import com.example.studysync_project.data.repository.UserRepository;
 import com.example.studysync_project.databinding.FragmentHomeBinding;
 import com.example.studysync_project.ui.auth.LoginActivity;
 import com.example.studysync_project.ui.profile.ProfileActivity;
+import com.example.studysync_project.ui.quiz.ModuleDetailActivity;
+import com.example.studysync_project.ui.quiz.StudyModuleAdapter;
 import com.example.studysync_project.ui.quiz.UploadModuleActivity;
 import com.example.studysync_project.utils.ConsentManager;
 import com.example.studysync_project.utils.ReadyModuleCatalog;
+import com.example.studysync_project.data.progression.ProgressionRepository;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class HomeFragment extends Fragment {
 
@@ -35,8 +44,25 @@ public class HomeFragment extends Fragment {
     private String userId;
 
     private ReadyModuleAdapter readyModuleAdapter;
+    private StudyModuleAdapter savedModuleAdapter;
+    private StudyModule topSavedModule;
     private ReadyModule recommendedModule;
+    private int recommendationAction = ACTION_UPLOAD;
+
+    private static final int ACTION_UPLOAD = 0;
+    private static final int ACTION_READY_MODULE = 1;
+    private static final int ACTION_SAVED_MODULE = 2;
+
     private Double latestAverageScore;
+    private String latestProgressStateLabel;
+    private int latestProgressIndex;
+    private int latestStreakDays;
+    private int latestPendingTasks;
+    private int latestStudyMinutesToday;
+    private int latestSessionsToday;
+    private int latestWeeklyStudyMinutes;
+    private double latestWeeklyQuizAverage;
+    private int latestSavedModuleCount;
     private String profileGradeLevel;
     private String profileStrand;
     private String profileGoal;
@@ -63,6 +89,7 @@ public class HomeFragment extends Fragment {
         loadLiveStats();
         setupClickListeners();
         setupReadyModules();
+        setupSavedModules();
     }
 
     private void loadUserData() {
@@ -102,16 +129,21 @@ public class HomeFragment extends Fragment {
 
         taskRepo.getActiveTaskCountForUser(userId).observe(getViewLifecycleOwner(), count -> {
             int c = count != null ? count : 0;
+            latestPendingTasks = c;
             binding.tvTasksSummary.setText(c + " pending task" + (c == 1 ? "" : "s"));
+            updateRecommendationCard();
         });
 
-        timerRepo.getTotalStudyMinutesForUser(userId).observe(getViewLifecycleOwner(), mins -> {
-            int m = mins != null ? mins : 0;
-            if (m >= 60) {
-                binding.tvStudyTime.setText((m / 60) + "h " + (m % 60) + "m today");
-            } else {
-                binding.tvStudyTime.setText(m + " minutes today");
-            }
+        timerRepo.getTodayStudyMinutesForUser(userId).observe(getViewLifecycleOwner(), mins -> {
+            latestStudyMinutesToday = mins != null ? mins : 0;
+            bindStudySummary();
+            updateRecommendationCard();
+        });
+
+        timerRepo.getTodayCompletedSessionCountForUser(userId).observe(getViewLifecycleOwner(), count -> {
+            latestSessionsToday = count != null ? count : 0;
+            bindStudySummary();
+            updateRecommendationCard();
         });
 
         attemptRepo.getAverageScoreForUser(userId).observe(getViewLifecycleOwner(), avg -> {
@@ -125,22 +157,141 @@ public class HomeFragment extends Fragment {
 
             updateRecommendationCard();
         });
+
+        new UserRepository(requireContext()).getUserProfile(userId).observe(getViewLifecycleOwner(), profile -> {
+            if (profile == null) {
+                binding.tvProgressIndex.setText("0/100");
+                binding.tvProgressState.setText("Starting");
+                binding.tvProgressState.setTextColor(ContextCompat.getColor(requireContext(), com.example.studysync_project.R.color.text_secondary));
+                binding.tvProgressMeta.setText("Build activity to unlock trend insights");
+                binding.tvStreakHighlight.setText(getString(R.string.home_streak_format, 0));
+                binding.tvWeeklyAnalytics.setText(getString(R.string.home_weekly_metrics_format, "0m", 0.0));
+                binding.progressWeeklyStudy.setProgress(0);
+                latestProgressStateLabel = "Starting";
+                latestProgressIndex = 0;
+                latestStreakDays = 0;
+                latestWeeklyStudyMinutes = 0;
+                latestWeeklyQuizAverage = 0.0;
+                updateRecommendationCard();
+                return;
+            }
+
+            String stateLabel = ProgressionRepository.formatStateLabel(profile.getProgressionState());
+            int roundedIndex = (int) Math.round(profile.getProgressionIndex());
+            binding.tvProgressIndex.setText(roundedIndex + "/100");
+            binding.tvProgressState.setText(stateLabel);
+
+            int stateColorRes;
+            if ("Improving".equals(stateLabel)) {
+                stateColorRes = com.example.studysync_project.R.color.success;
+            } else if ("Declining".equals(stateLabel)) {
+                stateColorRes = com.example.studysync_project.R.color.warning;
+            } else if ("Inactive".equals(stateLabel)) {
+                stateColorRes = com.example.studysync_project.R.color.inactive;
+            } else {
+                stateColorRes = com.example.studysync_project.R.color.info;
+            }
+            binding.tvProgressState.setTextColor(ContextCompat.getColor(requireContext(), stateColorRes));
+
+            StringBuilder meta = new StringBuilder();
+            meta.append(profile.getCurrentStreakDays()).append(" day streak");
+            if (profile.getFocusSubject() != null && !profile.getFocusSubject().trim().isEmpty()) {
+                meta.append(" • Focus: ").append(profile.getFocusSubject().trim());
+            }
+            if (profile.getLastUnlockedBadge() != null && !profile.getLastUnlockedBadge().trim().isEmpty()) {
+                meta.append(" • Badge: ").append(formatBadgeLabel(profile.getLastUnlockedBadge()));
+            }
+            binding.tvProgressMeta.setText(meta.toString());
+
+            latestStreakDays = profile.getCurrentStreakDays();
+            binding.tvStreakHighlight.setText(getString(R.string.home_streak_format, latestStreakDays));
+
+            latestWeeklyStudyMinutes = profile.getStudyMinutesLast7Days();
+            latestWeeklyQuizAverage = profile.getAverageQuizScoreLast7Days();
+            binding.tvWeeklyAnalytics.setText(getString(
+                    R.string.home_weekly_metrics_format,
+                    formatMinutesShort(latestWeeklyStudyMinutes),
+                    latestWeeklyQuizAverage
+            ));
+
+            int weeklyTarget = profile.getWeeklyStudyTargetMinutes() > 0 ? profile.getWeeklyStudyTargetMinutes() : 180;
+            int weeklyProgress = (int) Math.round((latestWeeklyStudyMinutes * 100.0) / weeklyTarget);
+            binding.progressWeeklyStudy.setProgress(Math.max(0, Math.min(100, weeklyProgress)));
+
+            latestProgressStateLabel = stateLabel;
+            latestProgressIndex = roundedIndex;
+            updateRecommendationCard();
+        });
+    }
+
+    private void bindStudySummary() {
+        if (binding == null) return;
+        String todayText = formatMinutesShort(latestStudyMinutesToday);
+        if (latestSessionsToday > 0) {
+            binding.tvStudyTime.setText(getString(R.string.home_study_today_with_sessions_format, todayText, latestSessionsToday));
+        } else {
+            binding.tvStudyTime.setText(getString(R.string.home_study_today_format, todayText));
+        }
+    }
+
+    private String formatMinutesShort(int minutes) {
+        if (minutes >= 60) {
+            return (minutes / 60) + "h " + (minutes % 60) + "m";
+        }
+        return minutes + "m";
+    }
+
+    private String formatBadgeLabel(String raw) {
+        if (raw == null) return "";
+        return raw.replace('_', ' ').trim();
     }
 
     private void setupReadyModules() {
         readyModuleAdapter = new ReadyModuleAdapter(module -> openReadyModule(module));
         binding.rvReadyModules.setAdapter(readyModuleAdapter);
 
-        binding.btnRecommendationAction.setOnClickListener(v -> {
-            if (recommendedModule != null) {
-                openReadyModule(recommendedModule);
-            } else {
-                startActivity(new Intent(requireContext(), UploadModuleActivity.class));
-            }
-        });
+        binding.btnRecommendationAction.setOnClickListener(v -> handleRecommendationAction());
 
         updateReadyModules();
         updateRecommendationCard();
+    }
+
+    private void setupSavedModules() {
+        savedModuleAdapter = new StudyModuleAdapter(new StudyModuleAdapter.OnStudyModuleClickListener() {
+            @Override
+            public void onStudyModuleClick(StudyModule module) {
+                openSavedModule(module);
+            }
+
+            @Override
+            public void onGenerateQuizFromModule(StudyModule module) {
+                generateQuizFromSavedModule(module);
+            }
+        });
+        binding.rvSavedModules.setAdapter(savedModuleAdapter);
+
+        StudyModuleRepository repository = new StudyModuleRepository(requireContext());
+        repository.syncStudyModulesFromFirestore(userId);
+        repository.getAllStudyModulesForUser(userId).observe(getViewLifecycleOwner(), modules -> {
+            List<StudyModule> source = modules != null ? modules : new ArrayList<>();
+            latestSavedModuleCount = source.size();
+
+            List<StudyModule> top3 = new ArrayList<>();
+            for (int i = 0; i < source.size() && i < 3; i++) {
+                top3.add(source.get(i));
+            }
+
+            savedModuleAdapter.submitList(top3);
+            binding.tvSavedModulesEmpty.setVisibility(top3.isEmpty() ? View.VISIBLE : View.GONE);
+
+            topSavedModule = top3.isEmpty() ? null : top3.get(0);
+            binding.tvModulesSummary.setText(getString(
+                    R.string.home_modules_summary_format,
+                    latestSavedModuleCount,
+                    top3.size()
+            ));
+            updateRecommendationCard();
+        });
     }
 
     private void updateReadyModules() {
@@ -257,19 +408,100 @@ public class HomeFragment extends Fragment {
         if (subject == null || subject.trim().isEmpty()) subject = "your subject";
 
         String message;
-        if (latestAverageScore == null) {
-            message = "Start with a quick " + subject + " module to build momentum.";
+        if (topSavedModule != null && latestStudyMinutesToday < 20) {
+            recommendationAction = ACTION_SAVED_MODULE;
+            binding.btnRecommendationAction.setText(R.string.home_action_continue_saved_module);
+            message = "You have only " + formatMinutesShort(latestStudyMinutesToday)
+                    + " of study today. Continue \"" + topSavedModule.getTitle() + "\" for a 20-minute push.";
+        } else if (latestPendingTasks >= 3) {
+            recommendationAction = topSavedModule != null ? ACTION_SAVED_MODULE : ACTION_READY_MODULE;
+            binding.btnRecommendationAction.setText(topSavedModule != null
+                ? R.string.home_action_continue_saved_module
+                : R.string.home_action_open_recommended_module);
+            message = "You have " + latestPendingTasks + " pending tasks. Complete one task, then run a focused "
+                    + subject + " review session.";
+        } else if (latestAverageScore == null) {
+            recommendationAction = topSavedModule != null ? ACTION_SAVED_MODULE : ACTION_READY_MODULE;
+            binding.btnRecommendationAction.setText(topSavedModule != null
+                ? R.string.home_action_continue_saved_module
+                : R.string.home_action_open_recommended_module);
+            message = topSavedModule != null
+                    ? "Start with your latest saved module to build momentum."
+                    : "Start with a quick " + subject + " module to build momentum.";
         } else if (latestAverageScore < 70.0) {
-            message = String.format("Your recent average is %.0f%%. Review a core %s module next.", latestAverageScore, subject);
+            recommendationAction = topSavedModule != null ? ACTION_SAVED_MODULE : ACTION_READY_MODULE;
+            binding.btnRecommendationAction.setText(topSavedModule != null
+                ? R.string.home_action_review_saved_module
+                : R.string.home_action_open_recommended_module);
+            message = String.format(Locale.getDefault(), "Your recent average is %.0f%%. Review a core %s module next.", latestAverageScore, subject);
         } else {
-            message = String.format("Nice work (%.0f%% average). Try a slightly harder %s module next.", latestAverageScore, subject);
+            recommendationAction = ACTION_READY_MODULE;
+            binding.btnRecommendationAction.setText(R.string.home_action_open_recommended_module);
+            message = String.format(Locale.getDefault(), "Nice work (%.0f%% average). Try a slightly harder %s module next.", latestAverageScore, subject);
         }
 
-        if (recommendedModule != null) {
+        if (latestProgressStateLabel != null) {
+            if ("Improving".equals(latestProgressStateLabel)) {
+                message = "You are improving (" + latestProgressIndex + "/100). Keep the " + latestStreakDays + " day streak going. " + message;
+            } else if ("Declining".equals(latestProgressStateLabel)) {
+                message = "Momentum dipped to " + latestProgressIndex + "/100. A focused review can reverse this quickly. " + message;
+            } else if ("Inactive".equals(latestProgressStateLabel)) {
+                message = "Your momentum is inactive. A short session today will restart your streak. " + message;
+            }
+        }
+
+        if (recommendationAction == ACTION_READY_MODULE && recommendedModule != null) {
             message = message + " Recommended: " + recommendedModule.title + ".";
+        } else if (recommendationAction == ACTION_SAVED_MODULE && topSavedModule != null) {
+            String title = topSavedModule.getTitle() != null ? topSavedModule.getTitle().trim() : "";
+            if (!title.isEmpty() && !message.contains(title)) {
+                message = message + " Continue with: " + title + ".";
+            }
         }
 
         binding.tvRecommendationBody.setText(message);
+    }
+
+    private void handleRecommendationAction() {
+        if (recommendationAction == ACTION_SAVED_MODULE && topSavedModule != null) {
+            openSavedModule(topSavedModule);
+            return;
+        }
+
+        if (recommendationAction == ACTION_READY_MODULE && recommendedModule != null) {
+            openReadyModule(recommendedModule);
+            return;
+        }
+
+        startActivity(new Intent(requireContext(), UploadModuleActivity.class));
+    }
+
+    private void openSavedModule(@Nullable StudyModule module) {
+        if (module == null || module.getModuleId() == null || module.getModuleId().trim().isEmpty()) {
+            Toast.makeText(requireContext(), "Module not available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Intent intent = new Intent(requireContext(), ModuleDetailActivity.class);
+        intent.putExtra(ModuleDetailActivity.EXTRA_MODULE_ID, module.getModuleId());
+        startActivity(intent);
+    }
+
+    private void generateQuizFromSavedModule(@Nullable StudyModule module) {
+        if (module == null || module.getContentText() == null || module.getContentText().trim().isEmpty()) {
+            Toast.makeText(requireContext(), "Module content is empty", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Intent intent = new Intent(requireContext(), UploadModuleActivity.class);
+        intent.putExtra(UploadModuleActivity.EXTRA_MODULE_ID, module.getModuleId());
+        intent.putExtra(UploadModuleActivity.EXTRA_READY_MODULE_TITLE, module.getTitle());
+        intent.putExtra(UploadModuleActivity.EXTRA_READY_MODULE_SUBJECT, module.getSubject());
+        intent.putExtra(UploadModuleActivity.EXTRA_READY_MODULE_TEXT, module.getContentText());
+        intent.putExtra(UploadModuleActivity.EXTRA_MODULE_SOURCE_TYPE, module.getSourceType());
+        intent.putExtra(UploadModuleActivity.EXTRA_MODULE_SOURCE_REF, module.getSourceRef());
+        intent.putExtra(UploadModuleActivity.EXTRA_READY_MODULE_QUESTION_COUNT, 10);
+        startActivity(intent);
     }
 
     private void openReadyModule(@NonNull ReadyModule module) {

@@ -38,6 +38,13 @@
     <!-- Success/Confirmation Colors -->
     <color name="success">#4CAF50</color>
     <color name="success_light">#E8F5E9</color>
+
+    <!-- Progression / semantic states -->
+    <color name="warning">#F3A93B</color>
+    <color name="info">#6BB5FF</color>
+    <color name="inactive">#A59AA9</color>
+    <color name="streak_orange">#FFB74D</color>
+    <color name="streak_orange_container">#5D3B1A</color>
     
     <!-- Splash Screen -->
     <color name="splash_bg">#7D5FB5</color>

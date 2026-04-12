@@ -26,9 +26,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="20dp"
-            android:paddingTop="24dp"
-            android:paddingBottom="32dp">
+            android:paddingHorizontal="@dimen/space_xl"
+            android:paddingTop="@dimen/space_2xl"
+            android:paddingBottom="@dimen/space_3xl">
 
             <!-- Score card -->
             <com.google.android.material.card.MaterialCardView
@@ -75,6 +75,16 @@
                         android:textColor="@color/on_primary"
                         android:textSize="14sp" />
 
+                    <TextView
+                        android:id="@+id/tv_progression_hint"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:alpha="0.9"
+                        android:text="Updating your progression..."
+                        android:textColor="@color/on_primary"
+                        android:textSize="13sp" />
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -89,13 +99,10 @@
                 android:textStyle="bold" />
 
             <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.StudySync.Card.Surface"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp"
-                app:strokeColor="@color/outline"
-                app:strokeWidth="1dp">
+                android:layout_marginBottom="@dimen/space_xl">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -136,13 +143,10 @@
                 android:textStyle="bold" />
 
             <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.StudySync.Card.Surface"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp"
-                app:strokeColor="@color/outline"
-                app:strokeWidth="1dp">
+                android:layout_marginBottom="@dimen/space_xl">
 
                 <TextView
                     android:id="@+id/tv_review"
@@ -158,6 +162,7 @@
             <!-- Action buttons -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_retake"
+                style="@style/Widget.StudySync.Button.Primary"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:layout_marginBottom="12dp"
@@ -170,7 +175,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_generate_module"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                style="@style/Widget.StudySync.Button.Outlined"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:layout_marginBottom="12dp"
@@ -180,7 +185,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_done"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                style="@style/Widget.StudySync.Button.Outlined"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:text="Back to Study Library"

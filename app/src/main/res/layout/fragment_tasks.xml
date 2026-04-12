@@ -16,14 +16,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp"
+            android:padding="@dimen/space_lg"
             android:background="@color/secondary">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Tasks"
-                android:textSize="28sp"
+                android:textSize="26sp"
                 android:textStyle="bold"
                 android:textColor="@color/on_secondary" />
 
@@ -44,6 +44,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:tabMode="scrollable"
+            app:tabTextColor="@color/text_secondary"
+            app:tabSelectedTextColor="@color/secondary"
+            app:tabRippleColor="@color/secondary_container"
             app:tabIndicatorColor="@color/secondary">
 
             <com.google.android.material.tabs.TabItem
@@ -69,7 +72,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:padding="8dp"
+            android:padding="@dimen/space_sm"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
         <!-- Empty State -->
@@ -86,7 +89,7 @@
                 android:layout_width="80dp"
                 android:layout_height="80dp"
                 android:layout_marginBottom="16dp"
-                app:cardCornerRadius="16dp"
+                app:cardCornerRadius="@dimen/radius_lg"
                 app:cardBackgroundColor="@color/secondary_container"
                 app:cardElevation="0dp">
                 <LinearLayout
@@ -128,10 +131,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
+        android:layout_margin="@dimen/space_lg"
         android:contentDescription="Add Task"
         app:srcCompat="@drawable/ic_add"
-        app:backgroundTint="@color/secondary" />
+        app:backgroundTint="@color/primary"
+        app:tint="@color/on_primary" />
 
 </FrameLayout>
 

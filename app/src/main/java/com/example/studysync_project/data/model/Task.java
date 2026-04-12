@@ -2,6 +2,7 @@ package com.example.studysync_project.data.model;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 import com.google.firebase.firestore.PropertyName;
 
@@ -41,6 +42,7 @@ public class Task {
         this.taskId = "";
     }
 
+    @Ignore
     public Task(String userId, String title, String description, long dueDate,
                 String priority, String category) {
         this.taskId = "";

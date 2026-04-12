@@ -59,11 +59,11 @@ public class TimerViewModel extends ViewModel {
     }
 
     public LiveData<Integer> getTotalMinutesToday() {
-        return repository.getTotalStudyMinutesForUser(userId);
+        return repository.getTodayStudyMinutesForUser(userId);
     }
 
     public LiveData<Integer> getSessionsCompletedToday() {
-        return repository.getCompletedSessionCountForUser(userId);
+        return repository.getTodayCompletedSessionCountForUser(userId);
     }
 
     public void onTick(long millisLeft, int prog) {

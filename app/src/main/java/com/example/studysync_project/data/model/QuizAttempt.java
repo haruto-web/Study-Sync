@@ -2,6 +2,7 @@ package com.example.studysync_project.data.model;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 import com.google.firebase.firestore.PropertyName;
 
@@ -36,6 +37,7 @@ public class QuizAttempt {
     public QuizAttempt() {
     }
 
+    @Ignore
     public QuizAttempt(String userId, String quizId, int questionsAttempted,
                        int correctAnswers, double scorePercentage, int timeTakenMinutes) {
         this.userId = userId;

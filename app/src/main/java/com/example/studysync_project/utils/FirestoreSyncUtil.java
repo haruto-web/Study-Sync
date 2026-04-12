@@ -9,6 +9,7 @@ import com.example.studysync_project.data.repository.StudyModuleRepository;
 import com.example.studysync_project.data.repository.TaskRepository;
 import com.example.studysync_project.data.repository.TimerRepository;
 import com.example.studysync_project.data.repository.UserRepository;
+import com.example.studysync_project.data.progression.ProgressionRepository;
 import com.google.firebase.auth.FirebaseAuth;
 
 /**
@@ -24,6 +25,7 @@ public class FirestoreSyncUtil {
     private final TimerRepository timerRepository;
     private final UserRepository userRepository;
     private final QuizAttemptRepository quizAttemptRepository;
+    private final ProgressionRepository progressionRepository;
 
     public FirestoreSyncUtil(Context context) {
         this.context = context;
@@ -34,6 +36,7 @@ public class FirestoreSyncUtil {
         this.timerRepository = new TimerRepository(context);
         this.userRepository = new UserRepository(context);
         this.quizAttemptRepository = new QuizAttemptRepository(context);
+        this.progressionRepository = new ProgressionRepository(context);
     }
 
     /**
@@ -47,6 +50,7 @@ public class FirestoreSyncUtil {
         syncTasks(userId);
         syncTimerSessions(userId);
         syncQuizAttempts(userId);
+        progressionRepository.recomputeProgressionAsync(userId);
     }
 
     /**

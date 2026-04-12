@@ -1,6 +1,7 @@
 package com.example.studysync_project.data.db;
 
 import android.content.Context;
+import android.database.Cursor;
 
 import androidx.room.Database;
 import androidx.room.migration.Migration;
@@ -37,7 +38,7 @@ import com.example.studysync_project.data.model.UserProfile;
         TimerSession.class,
         QuizAttempt.class
     },
-    version = 3,
+    version = 5,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -68,6 +69,79 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    private static final Migration MIGRATION_3_4 = new Migration(3, 4) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            if (!hasColumn(database, "users", "strand")) {
+                database.execSQL("ALTER TABLE users ADD COLUMN strand TEXT");
+            }
+        }
+    };
+
+    private static final Migration MIGRATION_4_5 = new Migration(4, 5) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            if (!hasColumn(database, "users", "progressionIndex")) {
+                database.execSQL("ALTER TABLE users ADD COLUMN progressionIndex REAL NOT NULL DEFAULT 0.0");
+            }
+            if (!hasColumn(database, "users", "progressionDelta")) {
+                database.execSQL("ALTER TABLE users ADD COLUMN progressionDelta REAL NOT NULL DEFAULT 0.0");
+            }
+            if (!hasColumn(database, "users", "progressionState")) {
+                database.execSQL("ALTER TABLE users ADD COLUMN progressionState TEXT");
+                database.execSQL("UPDATE users SET progressionState = 'STARTING' WHERE progressionState IS NULL");
+            }
+            if (!hasColumn(database, "users", "currentStreakDays")) {
+                database.execSQL("ALTER TABLE users ADD COLUMN currentStreakDays INTEGER NOT NULL DEFAULT 0");
+            }
+            if (!hasColumn(database, "users", "longestStreakDays")) {
+                database.execSQL("ALTER TABLE users ADD COLUMN longestStreakDays INTEGER NOT NULL DEFAULT 0");
+            }
+            if (!hasColumn(database, "users", "studyMinutesLast7Days")) {
+                database.execSQL("ALTER TABLE users ADD COLUMN studyMinutesLast7Days INTEGER NOT NULL DEFAULT 0");
+            }
+            if (!hasColumn(database, "users", "averageQuizScoreLast7Days")) {
+                database.execSQL("ALTER TABLE users ADD COLUMN averageQuizScoreLast7Days REAL NOT NULL DEFAULT 0.0");
+            }
+            if (!hasColumn(database, "users", "strongestSubject")) {
+                database.execSQL("ALTER TABLE users ADD COLUMN strongestSubject TEXT");
+            }
+            if (!hasColumn(database, "users", "focusSubject")) {
+                database.execSQL("ALTER TABLE users ADD COLUMN focusSubject TEXT");
+            }
+            if (!hasColumn(database, "users", "unlockedBadgesCsv")) {
+                database.execSQL("ALTER TABLE users ADD COLUMN unlockedBadgesCsv TEXT");
+            }
+            if (!hasColumn(database, "users", "lastUnlockedBadge")) {
+                database.execSQL("ALTER TABLE users ADD COLUMN lastUnlockedBadge TEXT");
+            }
+            if (!hasColumn(database, "users", "lastBadgeUnlockedAt")) {
+                database.execSQL("ALTER TABLE users ADD COLUMN lastBadgeUnlockedAt INTEGER NOT NULL DEFAULT 0");
+            }
+            if (!hasColumn(database, "users", "lastProgressComputedAt")) {
+                database.execSQL("ALTER TABLE users ADD COLUMN lastProgressComputedAt INTEGER NOT NULL DEFAULT 0");
+            }
+        }
+    };
+
+    private static boolean hasColumn(SupportSQLiteDatabase database, String tableName, String columnName) {
+        Cursor cursor = null;
+        try {
+            cursor = database.query("PRAGMA table_info(`" + tableName + "`)");
+            int nameIndex = cursor.getColumnIndex("name");
+            while (cursor.moveToNext()) {
+                if (nameIndex >= 0 && columnName.equalsIgnoreCase(cursor.getString(nameIndex))) {
+                    return true;
+                }
+            }
+            return false;
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+    }
+
     // Abstract methods to get DAOs
     public abstract UserProfileDao userProfileDao();
     public abstract StudyModuleDao studyModuleDao();
@@ -89,7 +163,7 @@ public abstract class AppDatabase extends RoomDatabase {
                             AppDatabase.class,
                             "studysync_database"
                         )
-                        .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                         .build();
                 }
             }

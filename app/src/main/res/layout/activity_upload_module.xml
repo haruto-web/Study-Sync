@@ -27,17 +27,17 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="20dp"
-            android:paddingTop="24dp"
-            android:paddingBottom="32dp">
+            android:paddingHorizontal="@dimen/space_xl"
+            android:paddingTop="@dimen/space_2xl"
+            android:paddingBottom="@dimen/space_3xl">
 
             <!-- Info card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
+                android:layout_marginBottom="@dimen/space_2xl"
                 app:cardBackgroundColor="@color/primary_container"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="@dimen/radius_md"
                 app:cardElevation="0dp"
                 app:strokeColor="@color/primary"
                 app:strokeWidth="1dp">
@@ -71,7 +71,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
+                android:layout_marginBottom="@dimen/space_sm"
                 android:text="Select File"
                 android:textColor="@color/text_primary"
                 android:textSize="14sp"
@@ -81,10 +81,10 @@
                 android:id="@+id/card_pick_file"
                 android:layout_width="match_parent"
                 android:layout_height="120dp"
-                android:layout_marginBottom="20dp"
+                android:layout_marginBottom="@dimen/space_xl"
                 android:clickable="true"
                 android:focusable="true"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="@dimen/radius_md"
                 app:cardElevation="0dp"
                 app:strokeColor="@color/outline"
                 app:strokeWidth="1dp">
@@ -123,10 +123,10 @@
 
             <!-- Subject input -->
             <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.StudySync.TextInputLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="@dimen/space_lg"
                 android:hint="Subject / Topic"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
@@ -144,10 +144,10 @@
 
             <!-- Number of questions -->
             <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.StudySync.TextInputLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="28dp"
+                android:layout_marginBottom="@dimen/space_2xl"
                 android:hint="Number of questions (5–15)"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
@@ -166,6 +166,7 @@
             <!-- Generate button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_generate"
+                style="@style/Widget.StudySync.Button.Primary"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:text="Analyze and Generate Quiz"
@@ -173,14 +174,14 @@
                 android:textSize="16sp"
                 android:textStyle="bold"
                 app:backgroundTint="@color/primary"
-                app:cornerRadius="12dp" />
+                app:cornerRadius="@dimen/radius_md" />
 
             <!-- Loading indicator -->
             <LinearLayout
                 android:id="@+id/layout_loading"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="@dimen/space_2xl"
                 android:gravity="center"
                 android:orientation="vertical"
                 android:visibility="gone">

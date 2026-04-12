@@ -17,7 +17,7 @@
             android:layout_height="wrap_content"
             android:background="@color/tertiary"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="@dimen/space_lg">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -49,18 +49,18 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingHorizontal="16dp"
-                android:paddingTop="16dp"
-                android:paddingBottom="24dp">
+                android:paddingHorizontal="@dimen/space_lg"
+                android:paddingTop="@dimen/space_lg"
+                android:paddingBottom="@dimen/space_2xl">
 
                 <!-- How it works tip card (for new users) -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/card_tip"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
+                    android:layout_marginBottom="@dimen/space_lg"
                     app:cardBackgroundColor="@color/tertiary_container"
-                    app:cardCornerRadius="12dp"
+                    app:cardCornerRadius="@dimen/radius_md"
                     app:cardElevation="0dp"
                     app:strokeColor="@color/tertiary"
                     app:strokeWidth="1dp">
@@ -151,11 +151,8 @@
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    app:cardCornerRadius="20dp"
-                    app:cardElevation="2dp"
-                    app:strokeColor="@color/outline"
-                    app:strokeWidth="1dp">
+                    android:layout_marginBottom="@dimen/space_lg"
+                    style="@style/Widget.StudySync.Card.Surface">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -228,7 +225,7 @@
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btn_reset"
-                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                style="@style/Widget.StudySync.Button.Outlined"
                                 android:layout_width="52dp"
                                 android:layout_height="52dp"
                                 android:layout_marginEnd="12dp"
@@ -239,6 +236,7 @@
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btn_start_pause"
+                                style="@style/Widget.StudySync.Button.Primary"
                                 android:layout_width="130dp"
                                 android:layout_height="52dp"
                                 android:text="Start"
@@ -250,7 +248,7 @@
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btn_skip"
-                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                style="@style/Widget.StudySync.Button.Outlined"
                                 android:layout_width="52dp"
                                 android:layout_height="52dp"
                                 android:layout_marginStart="12dp"
@@ -266,10 +264,10 @@
 
                 <!-- Subject Input -->
                 <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    style="@style/Widget.StudySync.TextInputLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
+                    android:layout_marginBottom="@dimen/space_lg"
                     android:hint="What are you studying? (optional)"
                     app:boxCornerRadiusBottomEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
@@ -289,10 +287,7 @@
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp"
-                    app:strokeColor="@color/outline"
-                    app:strokeWidth="1dp">
+                    style="@style/Widget.StudySync.Card.Surface">
 
                     <LinearLayout
                         android:layout_width="match_parent"

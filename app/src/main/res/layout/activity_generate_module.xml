@@ -27,16 +27,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="20dp"
-            android:paddingTop="24dp"
-            android:paddingBottom="24dp">
+            android:paddingHorizontal="@dimen/space_xl"
+            android:paddingTop="@dimen/space_2xl"
+            android:paddingBottom="@dimen/space_2xl">
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="18dp"
+                android:layout_marginBottom="@dimen/space_lg"
                 app:cardBackgroundColor="@color/primary_container"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="@dimen/radius_md"
                 app:cardElevation="0dp"
                 app:strokeColor="@color/primary"
                 app:strokeWidth="1dp">
@@ -52,10 +52,10 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.StudySync.TextInputLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
+                android:layout_marginBottom="@dimen/space_md"
                 android:hint="What are you currently studying?"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
@@ -72,10 +72,10 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.StudySync.TextInputLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
+                android:layout_marginBottom="@dimen/space_md"
                 android:hint="What topic are you interested in?"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
@@ -92,10 +92,10 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.StudySync.TextInputLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
+                android:layout_marginBottom="@dimen/space_md"
                 android:hint="Learning goal (optional)"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
@@ -114,10 +114,10 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.StudySync.TextInputLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="18dp"
+                android:layout_marginBottom="@dimen/space_lg"
                 android:hint="Quiz questions if you convert now (5-15)"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
@@ -135,6 +135,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_generate_module"
+                style="@style/Widget.StudySync.Button.Primary"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:text="Generate Module with Gemini"
@@ -142,13 +143,13 @@
                 android:textSize="16sp"
                 android:textStyle="bold"
                 app:backgroundTint="@color/primary"
-                app:cornerRadius="12dp" />
+                app:cornerRadius="@dimen/radius_md" />
 
             <LinearLayout
                 android:id="@+id/layout_loading"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
+                android:layout_marginTop="@dimen/space_lg"
                 android:gravity="center"
                 android:orientation="vertical"
                 android:visibility="gone">
@@ -170,14 +171,12 @@
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_generated_module"
+                style="@style/Widget.StudySync.Card.Surface"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
+                android:layout_marginTop="@dimen/space_lg"
                 android:visibility="gone"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="1dp"
-                app:strokeColor="@color/outline"
-                app:strokeWidth="1dp">
+                app:cardCornerRadius="@dimen/radius_md">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -221,7 +220,7 @@
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_open_saved_module"
-                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            style="@style/Widget.StudySync.Button.Outlined"
                             android:layout_width="wrap_content"
                             android:layout_height="40dp"
                             android:text="Review in Library"
@@ -230,6 +229,7 @@
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_generate_quiz_now"
+                            style="@style/Widget.StudySync.Button.Primary"
                             android:layout_width="wrap_content"
                             android:layout_height="40dp"
                             android:layout_marginStart="8dp"

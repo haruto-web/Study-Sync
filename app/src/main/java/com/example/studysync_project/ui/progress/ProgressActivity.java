@@ -4,12 +4,16 @@ import android.graphics.Color;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.example.studysync_project.data.model.QuizAttempt;
 import com.example.studysync_project.data.model.TimerSession;
+import com.example.studysync_project.data.model.UserProfile;
+import com.example.studysync_project.data.progression.ProgressionRepository;
 import com.example.studysync_project.data.repository.QuizAttemptRepository;
 import com.example.studysync_project.data.repository.TaskRepository;
 import com.example.studysync_project.data.repository.TimerRepository;
+import com.example.studysync_project.data.repository.UserRepository;
 import com.example.studysync_project.databinding.ActivityProgressBinding;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.BarData;
@@ -50,9 +54,82 @@ public class ProgressActivity extends AppCompatActivity {
         binding.toolbar.setNavigationOnClickListener(v -> finish());
 
         loadSummaryStats();
+        loadProgressionSummary();
         loadStudyTimeChart();
         loadQuizScoreChart();
         loadTaskPieChart();
+    }
+
+    private void loadProgressionSummary() {
+        new UserRepository(this).getUserProfile(userId).observe(this, this::bindProgression);
+    }
+
+    private void bindProgression(UserProfile profile) {
+        if (profile == null) {
+            binding.tvProgressionIndex.setText("0/100");
+            binding.tvProgressionState.setText("Starting");
+            binding.tvProgressionDelta.setText("No trend yet");
+            binding.tvProgressionState.setTextColor(ContextCompat.getColor(this, com.example.studysync_project.R.color.text_secondary));
+            binding.tvProgressionDelta.setTextColor(ContextCompat.getColor(this, com.example.studysync_project.R.color.text_secondary));
+            return;
+        }
+
+        int roundedIndex = (int) Math.round(profile.getProgressionIndex());
+        binding.tvProgressionIndex.setText(roundedIndex + "/100");
+        String stateLabel = ProgressionRepository.formatStateLabel(profile.getProgressionState());
+        binding.tvProgressionState.setText(
+                stateLabel +
+                        " • " + profile.getCurrentStreakDays() + " day streak"
+        );
+
+        int stateColorRes;
+        if ("Improving".equals(stateLabel)) {
+            stateColorRes = com.example.studysync_project.R.color.success;
+        } else if ("Declining".equals(stateLabel)) {
+            stateColorRes = com.example.studysync_project.R.color.warning;
+        } else if ("Inactive".equals(stateLabel)) {
+            stateColorRes = com.example.studysync_project.R.color.inactive;
+        } else {
+            stateColorRes = com.example.studysync_project.R.color.info;
+        }
+        binding.tvProgressionState.setTextColor(ContextCompat.getColor(this, stateColorRes));
+
+        double delta = profile.getProgressionDelta();
+        String deltaPrefix = delta > 0 ? "+" : "";
+        binding.tvProgressionDelta.setText(String.format(Locale.getDefault(), "%s%.1f vs last update", deltaPrefix, delta));
+        int deltaColorRes = delta > 0
+                ? com.example.studysync_project.R.color.success
+                : (delta < 0 ? com.example.studysync_project.R.color.warning : com.example.studysync_project.R.color.text_secondary);
+        binding.tvProgressionDelta.setTextColor(ContextCompat.getColor(this, deltaColorRes));
+
+        String focus = profile.getFocusSubject() != null ? profile.getFocusSubject().trim() : "";
+        String strongest = profile.getStrongestSubject() != null ? profile.getStrongestSubject().trim() : "";
+        if (!focus.isEmpty() || !strongest.isEmpty()) {
+            StringBuilder insight = new StringBuilder();
+            if (!focus.isEmpty()) {
+                insight.append("Focus next: ").append(focus);
+            }
+            if (!strongest.isEmpty()) {
+                if (insight.length() > 0) insight.append(" • ");
+                insight.append("Strongest: ").append(strongest);
+            }
+            binding.tvProgressionFocus.setText(insight.toString());
+        } else {
+            binding.tvProgressionFocus.setText("Keep practicing to unlock subject-specific insights.");
+        }
+
+            int weeklyMinutes = profile.getStudyMinutesLast7Days();
+            int weeklyHours = weeklyMinutes / 60;
+            int weeklyRemMinutes = weeklyMinutes % 60;
+            String weeklyStudyText = weeklyHours > 0
+                ? weeklyHours + "h " + weeklyRemMinutes + "m"
+                : weeklyMinutes + "m";
+            binding.tvProgressionWeekly.setText(String.format(
+                Locale.getDefault(),
+                "Last 7d: %.0f%% quiz avg • %s study",
+                profile.getAverageQuizScoreLast7Days(),
+                weeklyStudyText
+            ));
     }
 
     private void loadSummaryStats() {

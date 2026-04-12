@@ -7,6 +7,8 @@ import androidx.lifecycle.LiveData;
 import com.example.studysync_project.data.db.AppDatabase;
 import com.example.studysync_project.data.db.dao.TimerSessionDao;
 import com.example.studysync_project.data.model.TimerSession;
+import com.example.studysync_project.data.progression.ProgressionRepository;
+import com.example.studysync_project.utils.StudyTimeWindow;
 import com.example.studysync_project.utils.AppExecutors;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -15,10 +17,12 @@ import java.util.List;
 public class TimerRepository {
     private final TimerSessionDao timerSessionDao;
     private final FirebaseFirestore firestore;
+    private final ProgressionRepository progressionRepository;
 
     public TimerRepository(Context context) {
         this.timerSessionDao = AppDatabase.getInstance(context).timerSessionDao();
         this.firestore = FirebaseFirestore.getInstance();
+        this.progressionRepository = new ProgressionRepository(context);
     }
 
     public LiveData<List<TimerSession>> getAllTimerSessionsForUser(String userId) {
@@ -49,21 +53,55 @@ public class TimerRepository {
         return timerSessionDao.getCompletedSessionCountForUser(userId);
     }
 
+    public LiveData<Integer> getCompletedStudyMinutesInRange(String userId, long startTime, long endTime) {
+        return timerSessionDao.getCompletedMinutesBetween(userId, startTime, endTime);
+    }
+
+    public LiveData<Integer> getCompletedSessionCountInRange(String userId, long startTime, long endTime) {
+        return timerSessionDao.getCompletedSessionCountBetween(userId, startTime, endTime);
+    }
+
+    public LiveData<Integer> getTodayStudyMinutesForUser(String userId) {
+        long now = System.currentTimeMillis();
+        long start = StudyTimeWindow.startOfDayMillis(now);
+        long end = StudyTimeWindow.endOfDayMillis(now);
+        return getCompletedStudyMinutesInRange(userId, start, end);
+    }
+
+    public LiveData<Integer> getTodayCompletedSessionCountForUser(String userId) {
+        long now = System.currentTimeMillis();
+        long start = StudyTimeWindow.startOfDayMillis(now);
+        long end = StudyTimeWindow.endOfDayMillis(now);
+        return getCompletedSessionCountInRange(userId, start, end);
+    }
+
     public void createTimerSession(TimerSession session, String userId) {
         session.setUserId(userId);
         AppExecutors.diskIO().execute(() -> timerSessionDao.insertTimerSession(session));
         firestore.collection("timerSessions").document(session.getSessionId())
                 .set(session).addOnFailureListener(Throwable::printStackTrace);
+        if (session.isCompleted()) {
+            progressionRepository.recomputeProgressionAsync(userId);
+        }
     }
 
     public void updateTimerSession(TimerSession session) {
         AppExecutors.diskIO().execute(() -> timerSessionDao.updateTimerSession(session));
         firestore.collection("timerSessions").document(session.getSessionId())
                 .set(session).addOnFailureListener(Throwable::printStackTrace);
+        if (session.isCompleted() && session.getUserId() != null) {
+            progressionRepository.recomputeProgressionAsync(session.getUserId());
+        }
     }
 
     public void deleteTimerSession(String sessionId) {
-        AppExecutors.diskIO().execute(() -> timerSessionDao.deleteTimerSessionById(sessionId));
+        AppExecutors.diskIO().execute(() -> {
+            TimerSession session = timerSessionDao.getTimerSessionByIdSync(sessionId);
+            timerSessionDao.deleteTimerSessionById(sessionId);
+            if (session != null && session.getUserId() != null) {
+                progressionRepository.recomputeAndPersistForSync(session.getUserId());
+            }
+        });
         firestore.collection("timerSessions").document(sessionId).delete();
     }
 
@@ -71,7 +109,10 @@ public class TimerRepository {
         firestore.collection("timerSessions").whereEqualTo("userId", userId).get()
                 .addOnSuccessListener(snap -> {
                     List<TimerSession> sessions = snap.toObjects(TimerSession.class);
-                    AppExecutors.diskIO().execute(() -> timerSessionDao.insertAllTimerSessions(sessions));
+                    AppExecutors.diskIO().execute(() -> {
+                        timerSessionDao.insertAllTimerSessions(sessions);
+                        progressionRepository.recomputeAndPersistForSync(userId);
+                    });
                 })
                 .addOnFailureListener(Throwable::printStackTrace);
     }

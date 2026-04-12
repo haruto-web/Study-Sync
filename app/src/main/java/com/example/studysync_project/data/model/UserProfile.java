@@ -2,6 +2,7 @@ package com.example.studysync_project.data.model;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 import com.google.firebase.firestore.PropertyName;
 
@@ -28,6 +29,21 @@ public class UserProfile {
     public int totalStudyMinutes;
     public double averageQuizScore;
 
+    // Progression analytics (MVP)
+    public double progressionIndex;
+    public double progressionDelta;
+    public String progressionState;
+    public int currentStreakDays;
+    public int longestStreakDays;
+    public int studyMinutesLast7Days;
+    public double averageQuizScoreLast7Days;
+    public String strongestSubject;
+    public String focusSubject;
+    public String unlockedBadgesCsv;
+    public String lastUnlockedBadge;
+    public long lastBadgeUnlockedAt;
+    public long lastProgressComputedAt;
+
     // Consent + onboarding (versioned)
     public boolean termsAccepted;
     public long termsAcceptedAt;
@@ -46,6 +62,7 @@ public class UserProfile {
         this.userId = ""; 
     }
 
+    @Ignore
     public UserProfile(@NonNull String userId, String email, String fullName) {
         this.userId = userId;
         this.email = email;
@@ -57,6 +74,20 @@ public class UserProfile {
         this.totalTasksCompleted = 0;
         this.totalStudyMinutes = 0;
         this.averageQuizScore = 0.0;
+
+        this.progressionIndex = 0.0;
+        this.progressionDelta = 0.0;
+        this.progressionState = "STARTING";
+        this.currentStreakDays = 0;
+        this.longestStreakDays = 0;
+        this.studyMinutesLast7Days = 0;
+        this.averageQuizScoreLast7Days = 0.0;
+        this.strongestSubject = "";
+        this.focusSubject = "";
+        this.unlockedBadgesCsv = "";
+        this.lastUnlockedBadge = "";
+        this.lastBadgeUnlockedAt = 0L;
+        this.lastProgressComputedAt = 0L;
 
         this.termsAccepted = false;
         this.termsAcceptedAt = 0L;
@@ -86,6 +117,20 @@ public class UserProfile {
     public int getTotalStudyMinutes() { return totalStudyMinutes; }
     public double getAverageQuizScore() { return averageQuizScore; }
 
+    public double getProgressionIndex() { return progressionIndex; }
+    public double getProgressionDelta() { return progressionDelta; }
+    public String getProgressionState() { return progressionState; }
+    public int getCurrentStreakDays() { return currentStreakDays; }
+    public int getLongestStreakDays() { return longestStreakDays; }
+    public int getStudyMinutesLast7Days() { return studyMinutesLast7Days; }
+    public double getAverageQuizScoreLast7Days() { return averageQuizScoreLast7Days; }
+    public String getStrongestSubject() { return strongestSubject; }
+    public String getFocusSubject() { return focusSubject; }
+    public String getUnlockedBadgesCsv() { return unlockedBadgesCsv; }
+    public String getLastUnlockedBadge() { return lastUnlockedBadge; }
+    public long getLastBadgeUnlockedAt() { return lastBadgeUnlockedAt; }
+    public long getLastProgressComputedAt() { return lastProgressComputedAt; }
+
     public boolean isTermsAccepted() { return termsAccepted; }
     public long getTermsAcceptedAt() { return termsAcceptedAt; }
     public int getTermsVersion() { return termsVersion; }
@@ -109,6 +154,20 @@ public class UserProfile {
     public void setTotalTasksCompleted(int totalTasksCompleted) { this.totalTasksCompleted = totalTasksCompleted; }
     public void setTotalStudyMinutes(int totalStudyMinutes) { this.totalStudyMinutes = totalStudyMinutes; }
     public void setAverageQuizScore(double averageQuizScore) { this.averageQuizScore = averageQuizScore; }
+
+    public void setProgressionIndex(double progressionIndex) { this.progressionIndex = progressionIndex; }
+    public void setProgressionDelta(double progressionDelta) { this.progressionDelta = progressionDelta; }
+    public void setProgressionState(String progressionState) { this.progressionState = progressionState; }
+    public void setCurrentStreakDays(int currentStreakDays) { this.currentStreakDays = currentStreakDays; }
+    public void setLongestStreakDays(int longestStreakDays) { this.longestStreakDays = longestStreakDays; }
+    public void setStudyMinutesLast7Days(int studyMinutesLast7Days) { this.studyMinutesLast7Days = studyMinutesLast7Days; }
+    public void setAverageQuizScoreLast7Days(double averageQuizScoreLast7Days) { this.averageQuizScoreLast7Days = averageQuizScoreLast7Days; }
+    public void setStrongestSubject(String strongestSubject) { this.strongestSubject = strongestSubject; }
+    public void setFocusSubject(String focusSubject) { this.focusSubject = focusSubject; }
+    public void setUnlockedBadgesCsv(String unlockedBadgesCsv) { this.unlockedBadgesCsv = unlockedBadgesCsv; }
+    public void setLastUnlockedBadge(String lastUnlockedBadge) { this.lastUnlockedBadge = lastUnlockedBadge; }
+    public void setLastBadgeUnlockedAt(long lastBadgeUnlockedAt) { this.lastBadgeUnlockedAt = lastBadgeUnlockedAt; }
+    public void setLastProgressComputedAt(long lastProgressComputedAt) { this.lastProgressComputedAt = lastProgressComputedAt; }
     public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
     public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
 

@@ -16,7 +16,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp"
+            android:padding="@dimen/space_lg"
             android:background="@color/primary">
 
             <TextView
@@ -49,15 +49,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="8dp">
+                android:padding="@dimen/space_sm">
 
                 <com.google.android.material.card.MaterialCardView
+                    style="@style/Widget.StudySync.Card.Surface"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
                     app:cardBackgroundColor="@color/primary_container"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="0dp"
                     app:strokeColor="@color/primary"
                     app:strokeWidth="1dp">
 
@@ -85,6 +84,7 @@
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_open_gemini_module_generator"
+                            style="@style/Widget.StudySync.Button.Primary"
                             android:layout_width="wrap_content"
                             android:layout_height="40dp"
                             android:layout_marginTop="12dp"

@@ -18,11 +18,106 @@
         android:visibility="gone" />
 
     <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card_ar_face_quiz"
+        android:layout_width="280dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:visibility="gone"
+        app:cardBackgroundColor="#F5FFFFFF"
+        app:cardCornerRadius="@dimen/radius_lg"
+        app:cardElevation="6dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/space_md">
+
+            <TextView
+                android:id="@+id/tv_ar_face_progress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/ar_question_progress_default"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/tv_ar_face_question"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="@string/ar_question_placeholder"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm"
+                android:orientation="vertical">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_ar_face_option_a"
+                    style="@style/Widget.StudySync.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="36dp"
+                    android:text="A"
+                    android:textAllCaps="false"
+                    android:textSize="11sp"
+                    app:cornerRadius="@dimen/radius_sm" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_ar_face_option_b"
+                    style="@style/Widget.StudySync.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="36dp"
+                    android:layout_marginTop="@dimen/space_xs"
+                    android:text="B"
+                    android:textAllCaps="false"
+                    android:textSize="11sp"
+                    app:cornerRadius="@dimen/radius_sm" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_ar_face_option_c"
+                    style="@style/Widget.StudySync.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="36dp"
+                    android:layout_marginTop="@dimen/space_xs"
+                    android:text="C"
+                    android:textAllCaps="false"
+                    android:textSize="11sp"
+                    app:cornerRadius="@dimen/radius_sm" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_ar_face_option_d"
+                    style="@style/Widget.StudySync.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="36dp"
+                    android:layout_marginTop="@dimen/space_xs"
+                    android:text="D"
+                    android:textAllCaps="false"
+                    android:textSize="11sp"
+                    app:cornerRadius="@dimen/radius_sm" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tv_ar_face_hint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm"
+                android:text="@string/ar_face_tracking_wait"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/card_ar_instruction"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|center_horizontal"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="@dimen/space_lg"
         app:cardBackgroundColor="#E6FFFFFF"
         app:cardCornerRadius="22dp"
         app:cardElevation="2dp">
@@ -31,8 +126,8 @@
             android:id="@+id/tv_ar_instruction"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="10dp"
+            android:paddingHorizontal="@dimen/space_lg"
+            android:paddingVertical="@dimen/space_md"
             android:text="@string/ar_instruction_compact"
             android:textColor="@color/text_primary"
             android:textSize="13sp" />
@@ -43,21 +138,21 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="@dimen/space_lg">
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/card_ar_controls"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:cardBackgroundColor="#F2FFFBFE"
-            app:cardCornerRadius="18dp"
+            app:cardCornerRadius="@dimen/radius_lg"
             app:cardElevation="6dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="14dp">
+                android:padding="@dimen/space_md">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -80,28 +175,73 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_toggle_ar_controls"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        style="@style/Widget.StudySync.Button.Outlined"
                         android:layout_width="wrap_content"
                         android:layout_height="36dp"
                         android:text="@string/ar_hide_controls"
                         android:textAllCaps="false"
                         android:textSize="12sp"
-                        app:cornerRadius="18dp" />
+                        app:cornerRadius="@dimen/radius_lg" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:id="@+id/layout_ar_controls_body"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/space_sm"
                     android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/ar_mode_title"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/toggle_ar_mode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_xs"
+                        app:selectionRequired="true"
+                        app:singleSelection="true">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_ar_mode_surface"
+                            style="@style/Widget.StudySync.Button.Outlined"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:text="@string/ar_mode_surface"
+                            android:textAllCaps="false"
+                            android:textSize="12sp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_ar_mode_face"
+                            style="@style/Widget.StudySync.Button.Outlined"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:text="@string/ar_mode_face"
+                            android:textAllCaps="false"
+                            android:textSize="12sp" />
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                    <TextView
+                        android:id="@+id/tv_ar_mode_status"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_xs"
+                        android:text="@string/ar_mode_surface_active"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/til_quiz_selector"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                        style="@style/Widget.StudySync.TextInputLayout.ExposedDropdown"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Select quiz">
+                        android:hint="@string/ar_quiz_selector_hint">
 
                         <AutoCompleteTextView
                             android:id="@+id/actv_quiz_selector"
@@ -113,11 +253,11 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/til_flashcard_text"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        style="@style/Widget.StudySync.TextInputLayout"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:hint="Card text">
+                        android:layout_marginTop="@dimen/space_sm"
+                        android:hint="@string/ar_card_text_hint">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/et_flashcard_text"
@@ -129,18 +269,18 @@
 
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/card_ar_question_panel"
+                        style="@style/Widget.StudySync.Card.Surface"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
+                        android:layout_marginTop="@dimen/space_sm"
                         app:cardBackgroundColor="#FFFFFFFF"
-                        app:cardCornerRadius="14dp"
-                        app:cardElevation="1dp">
+                        app:cardCornerRadius="@dimen/radius_md">
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="vertical"
-                            android:padding="12dp">
+                            android:padding="@dimen/space_md">
 
                             <TextView
                                 android:id="@+id/tv_ar_question_progress"
@@ -154,7 +294,7 @@
                                 android:id="@+id/tv_ar_question_text"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="6dp"
+                                android:layout_marginTop="@dimen/space_xs"
                                 android:text="@string/ar_question_placeholder"
                                 android:textColor="@color/text_primary"
                                 android:textSize="14sp"
@@ -164,7 +304,7 @@
                                 android:id="@+id/rg_ar_options"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
+                                android:layout_marginTop="@dimen/space_sm"
                                 android:orientation="vertical">
 
                                 <RadioButton
@@ -208,7 +348,7 @@
                                 android:id="@+id/tv_ar_answer_feedback"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
+                                android:layout_marginTop="@dimen/space_sm"
                                 android:text="@string/ar_answer_select_prompt"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="13sp" />
@@ -216,12 +356,12 @@
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="10dp"
+                                android:layout_marginTop="@dimen/space_sm"
                                 android:orientation="horizontal">
 
                                 <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btn_submit_ar_answer"
-                                    style="@style/Widget.MaterialComponents.Button"
+                                    style="@style/Widget.StudySync.Button.Primary"
                                     android:layout_width="0dp"
                                     android:layout_height="40dp"
                                     android:layout_weight="1"
@@ -236,7 +376,7 @@
 
                                 <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btn_next_ar_question"
-                                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                    style="@style/Widget.StudySync.Button.Outlined"
                                     android:layout_width="0dp"
                                     android:layout_height="40dp"
                                     android:layout_weight="1"
@@ -250,7 +390,7 @@
                                 android:id="@+id/tv_ar_score"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
+                                android:layout_marginTop="@dimen/space_sm"
                                 android:text="@string/ar_score_default"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="12sp" />
@@ -260,14 +400,14 @@
                                 style="?android:attr/progressBarStyleSmall"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
+                                android:layout_marginTop="@dimen/space_sm"
                                 android:visibility="gone" />
 
                             <TextView
                                 android:id="@+id/tv_ar_ai_insight"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
+                                android:layout_marginTop="@dimen/space_sm"
                                 android:text="@string/ar_ai_insight_placeholder"
                                 android:textColor="@color/text_primary"
                                 android:textSize="13sp"
@@ -278,13 +418,26 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
+                        android:layout_marginTop="@dimen/space_sm"
                         android:gravity="end"
                         android:orientation="horizontal">
 
                         <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_place_ar_card"
+                            style="@style/Widget.StudySync.Button.Primary"
+                            android:layout_width="wrap_content"
+                            android:layout_height="40dp"
+                            android:text="@string/ar_place_card"
+                            android:textAllCaps="false"
+                            app:cornerRadius="12dp" />
+
+                        <Space
+                            android:layout_width="10dp"
+                            android:layout_height="1dp" />
+
+                        <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_clear_ar"
-                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            style="@style/Widget.StudySync.Button.Outlined"
                             android:layout_width="wrap_content"
                             android:layout_height="40dp"
                             android:text="@string/ar_clear_all"
@@ -304,12 +457,13 @@
         android:visibility="gone">
 
         <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.StudySync.Card.Surface"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:layout_marginHorizontal="24dp"
+            android:layout_marginHorizontal="@dimen/space_2xl"
             app:cardBackgroundColor="@color/surface"
-            app:cardCornerRadius="18dp"
+            app:cardCornerRadius="@dimen/radius_lg"
             app:cardElevation="3dp">
 
             <LinearLayout
@@ -317,13 +471,13 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:padding="24dp">
+                android:padding="@dimen/space_2xl">
 
                 <ImageView
                     android:layout_width="72dp"
                     android:layout_height="72dp"
-                    android:layout_marginBottom="14dp"
-                    android:contentDescription="AR"
+                    android:layout_marginBottom="@dimen/space_md"
+                    android:contentDescription="@string/ar_icon_content_description"
                     android:src="@drawable/ic_ar"
                     android:tint="@color/primary" />
 
@@ -341,13 +495,13 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:gravity="center"
-                    android:text="This device does not support ARCore."
+                    android:text="@string/ar_not_available_default_reason"
                     android:textColor="@color/text_secondary"
                     android:textSize="14sp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_retry_ar"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    style="@style/Widget.StudySync.Button.Outlined"
                     android:layout_width="match_parent"
                     android:layout_height="44dp"
                     android:layout_marginTop="18dp"
@@ -357,6 +511,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_ar_fallback"
+                    style="@style/Widget.StudySync.Button.Primary"
                     android:layout_width="match_parent"
                     android:layout_height="44dp"
                     android:layout_marginTop="10dp"

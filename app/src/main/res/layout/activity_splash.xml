@@ -5,7 +5,8 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    android:background="@color/splash_bg">
+    android:background="@color/splash_bg"
+    android:paddingHorizontal="@dimen/space_2xl">
 
     <ImageView
         android:layout_width="220dp"
@@ -20,7 +21,8 @@
         android:layout_height="wrap_content"
         android:text="AI-Powered Smart Study Planner"
         android:textSize="14sp"
-        android:textColor="@color/primary"
+        android:textColor="@color/on_primary"
+        android:alpha="0.9"
         android:layout_marginTop="8dp" />
 
 </LinearLayout>

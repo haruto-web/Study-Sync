@@ -45,6 +45,12 @@ public interface QuizAttemptDao {
     @Query("SELECT AVG(scorePercentage) FROM quiz_attempts WHERE userId = :userId")
     LiveData<Double> getAverageScoreForUser(String userId);
 
+    @Query("SELECT AVG(scorePercentage) FROM quiz_attempts WHERE userId = :userId AND attemptedAt >= :startTime AND attemptedAt < :endTime")
+    Double getAverageScoreBetweenSync(String userId, long startTime, long endTime);
+
+    @Query("SELECT COUNT(*) FROM quiz_attempts WHERE userId = :userId AND attemptedAt >= :startTime AND attemptedAt < :endTime")
+    int getAttemptCountBetweenSync(String userId, long startTime, long endTime);
+
     @Query("SELECT COUNT(*) FROM quiz_attempts WHERE userId = :userId")
     LiveData<Integer> getTotalQuizAttemptsForUser(String userId);
 
@@ -53,6 +59,15 @@ public interface QuizAttemptDao {
 
     @Query("SELECT * FROM quiz_attempts WHERE userId = :userId AND quizId = :quizId ORDER BY attemptedAt DESC LIMIT 1")
     LiveData<QuizAttempt> getLastAttemptForQuiz(String userId, String quizId);
+
+    @Query("SELECT attemptedAt FROM quiz_attempts WHERE userId = :userId AND attemptedAt >= :since")
+    List<Long> getAttemptTimestampsSinceSync(String userId, long since);
+
+    @Query("SELECT MAX(attemptedAt) FROM quiz_attempts WHERE userId = :userId")
+    Long getLatestAttemptTimestampSync(String userId);
+
+    @Query("SELECT * FROM quiz_attempts WHERE userId = :userId ORDER BY attemptedAt DESC LIMIT :limit")
+    List<QuizAttempt> getRecentAttemptsSync(String userId, int limit);
 
     @Query("DELETE FROM quiz_attempts WHERE userId = :userId")
     void deleteAllAttemptsForUser(String userId);

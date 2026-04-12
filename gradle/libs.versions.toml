@@ -19,6 +19,7 @@ glide = "4.16.0"
 mpandroidchart = "v3.1.0"
 arcore = "1.47.0"
 androidxPdf = "1.0.0-alpha15"
+playServicesAuth = "21.3.0"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -47,6 +48,7 @@ glide-compiler = { group = "com.github.bumptech.glide", name = "compiler", versi
 mpandroidchart = { group = "com.github.PhilJay", name = "MPAndroidChart", version.ref = "mpandroidchart" }
 arcore = { group = "com.google.ar", name = "core", version.ref = "arcore" }
 androidx-pdf = { group = "androidx.pdf", name = "pdf-viewer", version.ref = "androidxPdf" }
+play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

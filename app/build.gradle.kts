@@ -74,6 +74,9 @@ dependencies {
     implementation(libs.glide)
     annotationProcessor(libs.glide.compiler)
 
+    // Google Sign-In
+    implementation(libs.play.services.auth)
+
     // Charts
     implementation(libs.mpandroidchart)
 

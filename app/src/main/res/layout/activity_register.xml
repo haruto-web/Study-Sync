@@ -174,6 +174,48 @@
             android:textStyle="bold"
             app:backgroundTint="@color/primary"
             app:cornerRadius="12dp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- OR Divider -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="16dp">
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1"
+                android:background="@color/outline" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="OR"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:paddingHorizontal="12dp" />
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1"
+                android:background="@color/outline" />
+        </LinearLayout>
+
+        <!-- Google Sign-Up Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_google_sign_in"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/button_height"
+            android:text="Continue with Google"
+            android:textSize="15sp"
+            android:textColor="@color/text_primary"
+            app:icon="@drawable/ic_google"
+            app:iconGravity="textStart"
+            app:iconTint="@null"
+            app:cornerRadius="12dp"
+            app:strokeColor="@color/outline"
             android:layout_marginBottom="20dp" />
 
         <!-- Login Link -->

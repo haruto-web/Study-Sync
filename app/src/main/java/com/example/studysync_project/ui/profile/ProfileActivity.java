@@ -1,8 +1,11 @@
 package com.example.studysync_project.ui.profile;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Base64;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -20,8 +23,9 @@ import com.example.studysync_project.data.repository.TimerRepository;
 import com.example.studysync_project.data.repository.UserRepository;
 import com.example.studysync_project.databinding.ActivityProfileBinding;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 
 public class ProfileActivity extends AppCompatActivity {
 
@@ -32,7 +36,7 @@ public class ProfileActivity extends AppCompatActivity {
 
     private final ActivityResultLauncher<String> imagePickerLauncher =
         registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
-            if (uri != null) uploadProfileImage(uri);
+            if (uri != null) encodeImageToBase64(uri);
         });
 
     @Override
@@ -70,11 +74,17 @@ public class ProfileActivity extends AppCompatActivity {
 
             if (profile.getProfileImageUrl() != null && !profile.getProfileImageUrl().isEmpty()) {
                 binding.ivAvatar.clearColorFilter();
-                Glide.with(this)
-                    .load(profile.getProfileImageUrl())
-                    .circleCrop()
-                    .placeholder(R.drawable.ic_account_circle)
-                    .into(binding.ivAvatar);
+                String imageData = profile.getProfileImageUrl();
+                if (imageData.startsWith("data:image")) {
+                    // Base64 stored in Firestore
+                    String base64 = imageData.substring(imageData.indexOf(",") + 1);
+                    byte[] bytes = Base64.decode(base64, Base64.NO_WRAP);
+                    Glide.with(this).load(bytes).circleCrop()
+                            .placeholder(R.drawable.ic_account_circle).into(binding.ivAvatar);
+                } else {
+                    Glide.with(this).load(imageData).circleCrop()
+                            .placeholder(R.drawable.ic_account_circle).into(binding.ivAvatar);
+                }
             }
 
             bindProgress(profile);
@@ -144,31 +154,30 @@ public class ProfileActivity extends AppCompatActivity {
             });
     }
 
-    private void uploadProfileImage(Uri uri) {
-        StorageReference ref = FirebaseStorage.getInstance()
-            .getReference("profile_images/" + userId + ".jpg");
+    private void encodeImageToBase64(Uri uri) {
+        try {
+            InputStream inputStream = getContentResolver().openInputStream(uri);
+            Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
 
-        binding.btnSave.setEnabled(false);
-        binding.btnSave.setText("Uploading...");
+            // Resize to max 256x256 to keep Firestore document size small
+            int maxSize = 256;
+            int width = bitmap.getWidth();
+            int height = bitmap.getHeight();
+            float scale = Math.min((float) maxSize / width, (float) maxSize / height);
+            bitmap = Bitmap.createScaledBitmap(bitmap,
+                    (int) (width * scale), (int) (height * scale), true);
 
-        ref.putFile(uri)
-            .continueWithTask(task -> {
-                if (!task.isSuccessful()) throw task.getException();
-                return ref.getDownloadUrl();
-            })
-            .addOnSuccessListener(downloadUri -> {
-                pendingImageUrl = downloadUri.toString();
-                binding.ivAvatar.clearColorFilter();
-                Glide.with(this).load(pendingImageUrl).circleCrop().into(binding.ivAvatar);
-                binding.btnSave.setEnabled(true);
-                binding.btnSave.setText("Save Changes");
-                Toast.makeText(this, "Photo ready — tap Save to apply.", Toast.LENGTH_SHORT).show();
-            })
-            .addOnFailureListener(e -> {
-                binding.btnSave.setEnabled(true);
-                binding.btnSave.setText("Save Changes");
-                Toast.makeText(this, "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            });
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
+            pendingImageUrl = "data:image/jpeg;base64,"
+                    + Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP);
+
+            binding.ivAvatar.clearColorFilter();
+            Glide.with(this).load(uri).circleCrop().into(binding.ivAvatar);
+            Toast.makeText(this, "Photo ready — tap Save to apply.", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Could not load image: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void saveProfile() {

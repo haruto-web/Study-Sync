@@ -69,6 +69,18 @@ public interface QuizAttemptDao {
     @Query("SELECT * FROM quiz_attempts WHERE userId = :userId ORDER BY attemptedAt DESC LIMIT :limit")
     List<QuizAttempt> getRecentAttemptsSync(String userId, int limit);
 
+    @Query("SELECT MAX(scorePercentage) FROM quiz_attempts WHERE userId = :userId AND quizId = :quizId")
+    LiveData<Double> getHighestScoreForQuiz(String userId, String quizId);
+
+    @Query("SELECT AVG(scorePercentage) FROM quiz_attempts WHERE userId = :userId AND quizId = :quizId")
+    LiveData<Double> getAverageScoreForQuiz(String userId, String quizId);
+
+    @Query("SELECT COUNT(*) FROM quiz_attempts WHERE userId = :userId AND quizId = :quizId")
+    LiveData<Integer> getAttemptCountForQuiz(String userId, String quizId);
+
+    @Query("SELECT * FROM quiz_attempts WHERE userId = :userId AND quizId = :quizId ORDER BY attemptedAt DESC LIMIT 2")
+    LiveData<List<QuizAttempt>> getLastTwoAttemptsForQuiz(String userId, String quizId);
+
     @Query("DELETE FROM quiz_attempts WHERE userId = :userId")
     void deleteAllAttemptsForUser(String userId);
 

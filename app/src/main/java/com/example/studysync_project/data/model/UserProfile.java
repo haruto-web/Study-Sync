@@ -50,6 +50,8 @@ public class UserProfile {
     public int termsVersion;
     public boolean personalizationEnabled;
 
+    public String username;
+    public int age;
     public String gradeLevel;
     public String strand;
     public String goal;
@@ -136,6 +138,8 @@ public class UserProfile {
     public int getTermsVersion() { return termsVersion; }
     public boolean isPersonalizationEnabled() { return personalizationEnabled; }
 
+    public String getUsername() { return username; }
+    public int getAge() { return age; }
     public String getGradeLevel() { return gradeLevel; }
     public String getStrand() { return strand; }
     public String getGoal() { return goal; }
@@ -176,6 +180,8 @@ public class UserProfile {
     public void setTermsVersion(int termsVersion) { this.termsVersion = termsVersion; }
     public void setPersonalizationEnabled(boolean personalizationEnabled) { this.personalizationEnabled = personalizationEnabled; }
 
+    public void setUsername(String username) { this.username = username; }
+    public void setAge(int age) { this.age = age; }
     public void setGradeLevel(String gradeLevel) { this.gradeLevel = gradeLevel; }
     public void setStrand(String strand) { this.strand = strand; }
     public void setGoal(String goal) { this.goal = goal; }

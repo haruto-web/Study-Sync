@@ -118,6 +118,49 @@ public class GeminiApiClient {
     }
 
     /**
+     * Analyzes quiz score vs previous attempt and returns comparison-based AI feedback
+     */
+    public static Call<JsonObject> analyzePerformanceWithHistory(
+            String subject, int score, int total, int previousScore, int previousTotal,
+            double highestScore, double averageScore, int attemptCount, String wrongTopics) {
+        int percent = total > 0 ? (score * 100) / total : 0;
+        int prevPercent = previousTotal > 0 ? (previousScore * 100) / previousTotal : -1;
+        int diff = prevPercent >= 0 ? percent - prevPercent : 0;
+
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("A student just completed a quiz on: ").append(subject).append(".\n")
+              .append("Current score: ").append(score).append("/").append(total)
+              .append(" (").append(percent).append("%)\n");
+
+        if (prevPercent >= 0) {
+            prompt.append("Previous attempt score: ").append(prevPercent).append("%\n");
+            if (diff > 0) {
+                prompt.append("Improvement: +").append(diff).append("% compared to last attempt.\n");
+            } else if (diff < 0) {
+                prompt.append("Decline: ").append(diff).append("% compared to last attempt.\n");
+            } else {
+                prompt.append("Score is the same as the last attempt.\n");
+            }
+        }
+
+        prompt.append("Highest score ever: ").append((int) highestScore).append("%\n")
+              .append("Average score across ").append(attemptCount).append(" attempt(s): ")
+              .append(String.format(java.util.Locale.getDefault(), "%.1f", averageScore)).append("%\n");
+
+        if (wrongTopics != null && !wrongTopics.isEmpty()) {
+            prompt.append("Questions answered incorrectly:\n").append(wrongTopics).append("\n");
+        }
+
+        prompt.append("\nWrite a short, encouraging, personalized feedback message (under 120 words). ");
+        if (prevPercent >= 0) {
+            prompt.append("Mention whether they improved, declined, or stayed the same compared to last time. ");
+        }
+        prompt.append("Include 1-2 specific study tips based on their weak areas. Be warm and motivating.");
+
+        return getService().generateContent(API_KEY, buildRequestBody(prompt.toString()));
+    }
+
+    /**
      * Generates a complete study module from the learner's current topic or interest.
      */
     public static Call<JsonObject> generateTopicStudyModule(

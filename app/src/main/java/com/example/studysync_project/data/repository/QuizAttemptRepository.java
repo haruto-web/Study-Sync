@@ -40,6 +40,22 @@ public class QuizAttemptRepository {
         return quizAttemptDao.getLastAttemptForQuiz(userId, quizId);
     }
 
+    public LiveData<Double> getHighestScoreForQuiz(String userId, String quizId) {
+        return quizAttemptDao.getHighestScoreForQuiz(userId, quizId);
+    }
+
+    public LiveData<Double> getAverageScoreForQuiz(String userId, String quizId) {
+        return quizAttemptDao.getAverageScoreForQuiz(userId, quizId);
+    }
+
+    public LiveData<Integer> getAttemptCountForQuiz(String userId, String quizId) {
+        return quizAttemptDao.getAttemptCountForQuiz(userId, quizId);
+    }
+
+    public LiveData<List<QuizAttempt>> getLastTwoAttemptsForQuiz(String userId, String quizId) {
+        return quizAttemptDao.getLastTwoAttemptsForQuiz(userId, quizId);
+    }
+
     public LiveData<Double> getAverageScoreForUser(String userId) {
         return quizAttemptDao.getAverageScoreForUser(userId);
     }

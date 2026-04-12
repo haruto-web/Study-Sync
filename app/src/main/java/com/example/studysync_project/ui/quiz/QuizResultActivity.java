@@ -11,6 +11,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.example.studysync_project.BuildConfig;
 import com.example.studysync_project.R;
@@ -66,21 +67,16 @@ public class QuizResultActivity extends AppCompatActivity {
 
         binding.toolbar.setNavigationOnClickListener(v -> finish());
 
-        // Display score
+        String wrongTopics = buildWrongTopicsForAi(questions, userAnswers);
+        String attemptQuizId = quizId != null && !quizId.trim().isEmpty() ? quizId : (subject != null ? subject : "");
         binding.tvScorePercent.setText(percent + "%");
         binding.tvScoreDetail.setText(score + " out of " + total + " correct");
         binding.tvScoreLabel.setText(getScoreLabel(percent));
 
-        // Save attempt
+        // Save attempt then load stats (stats load after save so current attempt is included)
         saveAttempt(score, total, percent, quizId, subject);
         observeProgressionHint();
-
-        // Get AI feedback
-        String wrongTopics = buildWrongTopicsForAi(questions, userAnswers);
-        fetchAiFeedback(subject, score, total, wrongTopics);
-
-        // Show a clear review summary
-        binding.tvReview.setText(buildReviewText(questions, userAnswers));
+        loadQuizStats(attemptQuizId, score, total, subject, wrongTopics, questions, userAnswers);
 
         binding.btnDone.setOnClickListener(v -> {
             startActivity(new Intent(this, com.example.studysync_project.MainActivity.class)
@@ -113,7 +109,82 @@ public class QuizResultActivity extends AppCompatActivity {
         });
     }
 
-    private void fetchAiFeedback(String subject, int score, int total, String wrongTopics) {
+    private void loadQuizStats(String quizId, int score, int total, String subject,
+                               String wrongTopics, ArrayList<Bundle> questions,
+                               ArrayList<String> userAnswers) {
+        String userId = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() != null
+                ? com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+
+        int currentPercent = total > 0 ? (score * 100) / total : 0;
+        binding.tvStatCurrent.setText(currentPercent + "%");
+        binding.pbScore.setProgress(currentPercent);
+        binding.tvReview.setText(buildReviewText(questions, userAnswers));
+
+        if (userId == null || quizId.isEmpty()) {
+            binding.tvStatPrevious.setText("N/A");
+            binding.tvStatHighest.setText(currentPercent + "%");
+            binding.tvStatAverage.setText(currentPercent + "%");
+            binding.tvStatAttempts.setText("Attempt 1");
+            fetchAiFeedback(subject, score, total, -1, -1, currentPercent, currentPercent, 1, buildWrongTopicsForAi(questions, userAnswers));
+            return;
+        }
+
+        QuizAttemptRepository repo = new QuizAttemptRepository(this);
+
+        // Load last two attempts to get previous score (index 0 = current just saved, index 1 = previous)
+        repo.getLastTwoAttemptsForQuiz(userId, quizId).observe(this, attempts -> {
+            int prevScore = -1;
+            int prevTotal = -1;
+            if (attempts != null && attempts.size() >= 2) {
+                com.example.studysync_project.data.model.QuizAttempt prev = attempts.get(1);
+                prevScore = prev.getCorrectAnswers();
+                prevTotal = prev.getQuestionsAttempted();
+                int prevPercent = prevTotal > 0 ? (prevScore * 100) / prevTotal : (int) prev.getScorePercentage();
+                binding.tvStatPrevious.setText(prevPercent + "%");
+
+                int diff = currentPercent - prevPercent;
+                if (diff > 0) {
+                    binding.tvStatTrend.setText("▲ " + diff + "% improvement");
+                    binding.tvStatTrend.setTextColor(ContextCompat.getColor(this, com.example.studysync_project.R.color.success));
+                } else if (diff < 0) {
+                    binding.tvStatTrend.setText("▼ " + Math.abs(diff) + "% decline");
+                    binding.tvStatTrend.setTextColor(ContextCompat.getColor(this, com.example.studysync_project.R.color.warning));
+                } else {
+                    binding.tvStatTrend.setText("→ Same as last attempt");
+                    binding.tvStatTrend.setTextColor(ContextCompat.getColor(this, com.example.studysync_project.R.color.text_secondary));
+                }
+            } else {
+                binding.tvStatPrevious.setText("N/A");
+                binding.tvStatTrend.setText("First attempt!");
+                binding.tvStatTrend.setTextColor(ContextCompat.getColor(this, com.example.studysync_project.R.color.primary));
+            }
+
+            final int finalPrevScore = prevScore;
+            final int finalPrevTotal = prevTotal;
+
+            repo.getHighestScoreForQuiz(userId, quizId).observe(this, highest -> {
+                double h = highest != null ? highest : currentPercent;
+                binding.tvStatHighest.setText((int) h + "%");
+
+                repo.getAverageScoreForQuiz(userId, quizId).observe(this, avg -> {
+                    double a = avg != null ? avg : currentPercent;
+                    binding.tvStatAverage.setText(String.format(Locale.getDefault(), "%.0f%%", a));
+
+                    repo.getAttemptCountForQuiz(userId, quizId).observe(this, count -> {
+                        int c = count != null ? count : 1;
+                        binding.tvStatAttempts.setText(c + " attempt" + (c == 1 ? "" : "s") + " total");
+                        fetchAiFeedback(subject, score, total, finalPrevScore, finalPrevTotal, h, a, c,
+                                buildWrongTopicsForAi(questions, userAnswers));
+                    });
+                });
+            });
+        });
+    }
+
+    private void fetchAiFeedback(String subject, int score, int total,
+                                 int prevScore, int prevTotal,
+                                 double highestScore, double averageScore, int attemptCount,
+                                 String wrongTopics) {
         binding.progressFeedback.setVisibility(View.VISIBLE);
         binding.tvAiFeedback.setVisibility(View.GONE);
 
@@ -129,7 +200,9 @@ public class QuizResultActivity extends AppCompatActivity {
             return;
         }
 
-        GeminiApiClient.analyzePerformance(subject, score, total, wrongTopics)
+        GeminiApiClient.analyzePerformanceWithHistory(
+                subject, score, total, prevScore, prevTotal,
+                highestScore, averageScore, attemptCount, wrongTopics)
                 .enqueue(new Callback<JsonObject>() {
                     @Override
                     public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {

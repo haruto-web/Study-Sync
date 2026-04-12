@@ -71,6 +71,32 @@ public class UserRepository {
         });
     }
 
+    public void updateProfileFields(String userId, String email, String fullName, String username,
+                                    int age, String gradeLevel, String strand, String topicsOfInterestCsv,
+                                    String profileImageUrl) {
+        AppExecutors.diskIO().execute(() -> {
+            UserProfile profile = userProfileDao.getUserProfileDirect(userId);
+            if (profile == null) {
+                profile = new UserProfile(userId, email, fullName);
+            }
+            if (email != null && !email.trim().isEmpty()) profile.setEmail(email);
+            if (fullName != null && !fullName.trim().isEmpty()) profile.setFullName(fullName);
+            profile.setUsername(username);
+            profile.setAge(age);
+            profile.setGradeLevel(gradeLevel);
+            profile.setStrand(strand);
+            profile.setTopicsOfInterestCsv(topicsOfInterestCsv);
+            if (profileImageUrl != null && !profileImageUrl.isEmpty()) {
+                profile.setProfileImageUrl(profileImageUrl);
+            }
+            profile.setUpdatedAt(System.currentTimeMillis());
+            userProfileDao.insertUserProfile(profile);
+            firestore.collection("users").document(userId)
+                    .set(profile)
+                    .addOnFailureListener(Throwable::printStackTrace);
+        });
+    }
+
     public void syncUserProfileFromFirestore(String userId) {
         firestore.collection("users").document(userId).get()
                 .addOnSuccessListener(doc -> {

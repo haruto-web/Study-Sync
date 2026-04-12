@@ -38,7 +38,7 @@ import com.example.studysync_project.data.model.UserProfile;
         TimerSession.class,
         QuizAttempt.class
     },
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -124,6 +124,18 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    private static final Migration MIGRATION_5_6 = new Migration(5, 6) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            if (!hasColumn(database, "users", "username")) {
+                database.execSQL("ALTER TABLE users ADD COLUMN username TEXT");
+            }
+            if (!hasColumn(database, "users", "age")) {
+                database.execSQL("ALTER TABLE users ADD COLUMN age INTEGER NOT NULL DEFAULT 0");
+            }
+        }
+    };
+
     private static boolean hasColumn(SupportSQLiteDatabase database, String tableName, String columnName) {
         Cursor cursor = null;
         try {
@@ -163,7 +175,7 @@ public abstract class AppDatabase extends RoomDatabase {
                             AppDatabase.class,
                             "studysync_database"
                         )
-                        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                         .build();
                 }
             }

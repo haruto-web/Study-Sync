@@ -1,0 +1,201 @@
+%% ===========================================
+%% DIAGRAM 1: DATA FLOW DIAGRAM
+%% ===========================================
+%% Copy and paste this section into https://mermaid.live
+graph TB
+    subgraph UI["UI Layer"]
+        A1["Home Fragment"]
+        A2["Quiz Fragment"]
+        A3["Tasks Fragment"]
+        A4["Timer Fragment"]
+        A5["AR Fragment"]
+    end
+
+    subgraph VM["ViewModel Layer"]
+        B1["HomeViewModel"]
+        B2["QuizViewModel"]
+        B3["TasksViewModel"]
+        B4["TimerViewModel"]
+        B5["ARViewModel"]
+    end
+
+    subgraph REPO["Repository Layer"]
+        C1["UserRepository"]
+        C2["QuizRepository"]
+        C3["TaskRepository"]
+        C4["TimerRepository"]
+        C5["QuestionRepository"]
+        C6["QuizAttemptRepository"]
+    end
+
+    subgraph LOCAL["Local Storage"]
+        D1["Room Database<br/>Users"]
+        D2["Room Database<br/>Quizzes"]
+        D3["Room Database<br/>Tasks"]
+        D4["Room Database<br/>Quiz Attempts"]
+    end
+
+    subgraph REMOTE["Remote Services"]
+        E1["Firebase Auth"]
+        E2["Firebase Firestore<br/>Users/Quizzes/Tasks"]
+        E3["Firebase Storage<br/>Media"]
+        E4["Google Gemini AI<br/>via Retrofit"]
+    end
+
+    A1 --> B1
+    A2 --> B2
+    A3 --> B3
+    A4 --> B4
+    A5 --> B5
+
+    B1 --> C1
+    B2 --> C2
+    B2 --> C5
+    B3 --> C3
+    B4 --> C4
+    B2 --> C6
+
+    C1 --> D1
+    C2 --> D2
+    C3 --> D3
+    C6 --> D4
+
+    C1 --> E1
+    C2 --> E2
+    C3 --> E2
+    C6 --> E2
+    C2 --> E4
+
+    E2 --> E3
+
+    style UI fill:#e1f5ff
+    style VM fill:#fff3e0
+    style REPO fill:#f3e5f5
+    style LOCAL fill:#e8f5e9
+    style REMOTE fill:#fce4ec
+
+
+%% ===========================================
+%% DIAGRAM 2: SYSTEM ARCHITECTURE DIAGRAM
+%% ===========================================
+%% Copy and paste this section into https://mermaid.live
+graph TB
+    subgraph CLIENT["Mobile Client - Android"]
+        subgraph PRESENTATION["Presentation Layer"]
+            PA["Activities<br/>MainActivity<br/>LoginActivity<br/>RegisterActivity<br/>QuizDetailActivity<br/>ARActivity"]
+            PB["Fragments<br/>HomeFragment<br/>QuizFragment<br/>TasksFragment<br/>TimerFragment<br/>ARFragment"]
+            PC["Adapters<br/>QuizAdapter<br/>TaskAdapter"]
+        end
+
+        subgraph BUSINESS["Business Logic Layer"]
+            BA["ViewModels<br/>HomeViewModel<br/>QuizViewModel<br/>TasksViewModel<br/>TimerViewModel<br/>ARViewModel"]
+            BB["Use Cases<br/>Quiz Management<br/>Task Management<br/>Timer Service"]
+        end
+
+        subgraph DATA["Data Layer"]
+            DA["Repositories<br/>UserRepository<br/>QuizRepository<br/>TaskRepository<br/>TimerRepository"]
+            DB["Local DB<br/>Room Database<br/>Entities"]
+            DC["SharedPreferences<br/>User Preferences"]
+        end
+    end
+
+    subgraph BACKEND["Backend Services"]
+        BA1["Firebase<br/>Authentication"]
+        BA2["Firebase<br/>Firestore"]
+        BA3["Firebase<br/>Storage"]
+        BA4["Google Cloud<br/>Gemini API"]
+    end
+
+    subgraph EXTERNAL["External Services"]
+        EA["ARCore<br/>AR Tracking"]
+        EB["Android Services<br/>WorkManager<br/>Foreground Service"]
+        EC["Third Party Libs<br/>Retrofit<br/>Glide<br/>MPAndroidChart"]
+    end
+
+    PA --> PB
+    PB --> PC
+    PB --> BA
+    PC --> BA
+
+    BA --> BB
+    BB --> DA
+
+    DA --> DB
+    DA --> DC
+    DB --> BA1
+    DB --> BA2
+    DB --> BA3
+
+    BA --> BA1
+    BA --> BA2
+    BA --> BA3
+    BA --> BA4
+
+    BB --> EA
+    BB --> EB
+    BA --> EC
+
+    style CLIENT fill:#e3f2fd
+    style PRESENTATION fill:#bbdefb
+    style BUSINESS fill:#90caf9
+    style DATA fill:#64b5f6
+    style BACKEND fill:#ffccbc
+    style EXTERNAL fill:#c8e6c9
+
+
+%% ===========================================
+%% DIAGRAM 3: USE CASE DIAGRAM
+%% ===========================================
+%% Copy and paste this section into https://mermaid.live
+graph TB
+    subgraph SYSTEM["Study-Sync System"]
+        UC1["🔐 User Authentication"]
+        UC2["📝 Manage Quizzes"]
+        UC3["✅ Take Quiz"]
+        UC4["📋 Manage Tasks"]
+        UC5["⏱️ Use Study Timer"]
+        UC6["🎯 View Dashboard"]
+        UC7["👁️ AR Flashcards"]
+        UC8["📊 View Statistics"]
+        UC9["🤖 Get AI Hints"]
+    end
+
+    STUDENT["👤 Student"]
+    TEACHER["👨‍🏫 Teacher"]
+    SYSTEM_ADMIN["🔧 System Admin"]
+    GEMINI["🤖 Gemini API"]
+
+    STUDENT -->|Register/Login| UC1
+    TEACHER -->|Register/Login| UC1
+    SYSTEM_ADMIN -->|Create/Update| UC1
+
+    STUDENT -->|View| UC6
+    TEACHER -->|Create/Edit| UC2
+    TEACHER -->|Upload| UC2
+
+    STUDENT -->|Take| UC3
+    STUDENT -->|Submit| UC3
+    UC3 -->|Calculates Score| UC8
+
+    STUDENT -->|Create| UC4
+    STUDENT -->|Complete| UC4
+    TEACHER -->|Assign| UC4
+
+    STUDENT -->|Start/Stop| UC5
+    UC5 -->|Tracks| UC8
+
+    STUDENT -->|View| UC7
+    STUDENT -->|Use| UC7
+
+    STUDENT -->|Query| UC8
+    TEACHER -->|Query| UC8
+
+    STUDENT -->|Request| UC9
+    UC9 -->|Calls API| GEMINI
+    GEMINI -->|Returns Hints| UC9
+
+    style SYSTEM fill:#e0e0e0
+    style STUDENT fill:#c8e6c9
+    style TEACHER fill:#ffccbc
+    style SYSTEM_ADMIN fill:#f8bbd0
+    style GEMINI fill:#fff9c4

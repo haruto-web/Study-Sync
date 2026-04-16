@@ -2,10 +2,13 @@ package com.example.studysync_project.ui.progress;
 
 import android.graphics.Color;
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import com.example.studysync_project.BuildConfig;
+import com.example.studysync_project.R;
 import com.example.studysync_project.data.model.QuizAttempt;
 import com.example.studysync_project.data.model.TimerSession;
 import com.example.studysync_project.data.model.UserProfile;
@@ -15,6 +18,8 @@ import com.example.studysync_project.data.repository.TaskRepository;
 import com.example.studysync_project.data.repository.TimerRepository;
 import com.example.studysync_project.data.repository.UserRepository;
 import com.example.studysync_project.databinding.ActivityProgressBinding;
+import com.example.studysync_project.utils.GeminiApiClient;
+import com.example.studysync_project.utils.NetworkUtil;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
@@ -29,6 +34,7 @@ import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.gson.JsonObject;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -36,12 +42,21 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class ProgressActivity extends AppCompatActivity {
 
     private ActivityProgressBinding binding;
     private String userId;
     private int activeTaskCount;
     private int completedTaskCount;
+    private int totalStudyMinutes;
+    private double averageScoreQuizNormalized;
+    private Double averageScoreModuleNormalized;
+    private boolean analyticsInsightLoading;
+    private UserProfile latestProfile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,7 +71,10 @@ public class ProgressActivity extends AppCompatActivity {
         }
 
         binding.toolbar.setNavigationOnClickListener(v -> finish());
-        binding.tvInteractiveInsight.setText(getString(com.example.studysync_project.R.string.progress_interactive_hint));
+        binding.tvInteractiveInsight.setText(getString(R.string.progress_interactive_hint));
+        binding.tvAnalyticsAiInsight.setText(getString(R.string.progress_ai_placeholder));
+        binding.btnGenerateAnalyticsInsight.setOnClickListener(v -> requestAnalyticsInsight());
+        updateSummaryAverageCard();
 
         loadSummaryStats();
         loadProgressionSummary();
@@ -70,12 +88,13 @@ public class ProgressActivity extends AppCompatActivity {
     }
 
     private void bindProgression(UserProfile profile) {
+        latestProfile = profile;
         if (profile == null) {
             binding.tvProgressionIndex.setText("0/100");
             binding.tvProgressionState.setText("Starting");
             binding.tvProgressionDelta.setText("No trend yet");
-            binding.tvProgressionState.setTextColor(ContextCompat.getColor(this, com.example.studysync_project.R.color.text_secondary));
-            binding.tvProgressionDelta.setTextColor(ContextCompat.getColor(this, com.example.studysync_project.R.color.text_secondary));
+            binding.tvProgressionState.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
+            binding.tvProgressionDelta.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
             return;
         }
 
@@ -89,13 +108,13 @@ public class ProgressActivity extends AppCompatActivity {
 
         int stateColorRes;
         if ("Improving".equals(stateLabel)) {
-            stateColorRes = com.example.studysync_project.R.color.success;
+            stateColorRes = R.color.success;
         } else if ("Declining".equals(stateLabel)) {
-            stateColorRes = com.example.studysync_project.R.color.warning;
+            stateColorRes = R.color.warning;
         } else if ("Inactive".equals(stateLabel)) {
-            stateColorRes = com.example.studysync_project.R.color.inactive;
+            stateColorRes = R.color.inactive;
         } else {
-            stateColorRes = com.example.studysync_project.R.color.info;
+            stateColorRes = R.color.info;
         }
         binding.tvProgressionState.setTextColor(ContextCompat.getColor(this, stateColorRes));
 
@@ -103,8 +122,8 @@ public class ProgressActivity extends AppCompatActivity {
         String deltaPrefix = delta > 0 ? "+" : "";
         binding.tvProgressionDelta.setText(String.format(Locale.getDefault(), "%s%.1f vs last update", deltaPrefix, delta));
         int deltaColorRes = delta > 0
-                ? com.example.studysync_project.R.color.success
-                : (delta < 0 ? com.example.studysync_project.R.color.warning : com.example.studysync_project.R.color.text_secondary);
+            ? R.color.success
+            : (delta < 0 ? R.color.warning : R.color.text_secondary);
         binding.tvProgressionDelta.setTextColor(ContextCompat.getColor(this, deltaColorRes));
 
         String focus = profile.getFocusSubject() != null ? profile.getFocusSubject().trim() : "";
@@ -131,20 +150,39 @@ public class ProgressActivity extends AppCompatActivity {
                 : weeklyMinutes + "m";
             binding.tvProgressionWeekly.setText(String.format(
                 Locale.getDefault(),
-                "Last 7d: %.0f%% quiz avg • %s study",
+                "Last 7d: %.0f%% normalized avg • %s study",
                 profile.getAverageQuizScoreLast7Days(),
                 weeklyStudyText
             ));
     }
 
     private void loadSummaryStats() {
-        new QuizAttemptRepository(this).getAverageScoreForUser(userId).observe(this, avg -> {
-            binding.tvAvgScore.setText(avg != null ? String.format("%.0f%%", avg) : "0%");
+        QuizAttemptRepository attemptRepository = new QuizAttemptRepository(this);
+        attemptRepository.getAverageScoreForUser(userId).observe(this, avg -> {
+            averageScoreQuizNormalized = avg != null ? avg : 0.0;
+            updateSummaryAverageCard();
+        });
+        attemptRepository.getAverageScoreForUserByModule(userId).observe(this, avg -> {
+            averageScoreModuleNormalized = avg;
+            updateSummaryAverageCard();
         });
         new TimerRepository(this).getTotalStudyMinutesForUser(userId).observe(this, mins -> {
             int m = mins != null ? mins : 0;
+            totalStudyMinutes = m;
             binding.tvTotalStudy.setText(m >= 60 ? (m / 60) + "h" : m + "m");
         });
+    }
+
+    private void updateSummaryAverageCard() {
+        double shownAverage = averageScoreModuleNormalized != null
+                ? averageScoreModuleNormalized
+                : averageScoreQuizNormalized;
+        binding.tvAvgScore.setText(String.format(Locale.getDefault(), "%.0f%%", shownAverage));
+        binding.tvAvgScoreScope.setText(getString(
+                averageScoreModuleNormalized != null
+                        ? R.string.progress_avg_scope_module
+                        : R.string.progress_avg_scope_quiz
+        ));
     }
 
     private void loadStudyTimeChart() {
@@ -193,7 +231,7 @@ public class ProgressActivity extends AppCompatActivity {
                         return;
                     }
                     setInteractiveInsight(getString(
-                            com.example.studysync_project.R.string.progress_interactive_study_format,
+                            R.string.progress_interactive_study_format,
                             dayLabels[index],
                             Math.round(e.getY())
                     ));
@@ -201,7 +239,7 @@ public class ProgressActivity extends AppCompatActivity {
 
                 @Override
                 public void onNothingSelected() {
-                    setInteractiveInsight(getString(com.example.studysync_project.R.string.progress_interactive_hint));
+                    setInteractiveInsight(getString(R.string.progress_interactive_hint));
                 }
             });
             binding.chartStudyTime.animateY(600);
@@ -243,7 +281,7 @@ public class ProgressActivity extends AppCompatActivity {
                 public void onValueSelected(Entry e, Highlight h) {
                     int attemptNumber = Math.max(1, Math.round(e.getX()) + 1);
                     setInteractiveInsight(getString(
-                            com.example.studysync_project.R.string.progress_interactive_quiz_format,
+                            R.string.progress_interactive_quiz_format,
                             attemptNumber,
                             Math.round(e.getY())
                     ));
@@ -251,7 +289,7 @@ public class ProgressActivity extends AppCompatActivity {
 
                 @Override
                 public void onNothingSelected() {
-                    setInteractiveInsight(getString(com.example.studysync_project.R.string.progress_interactive_hint));
+                    setInteractiveInsight(getString(R.string.progress_interactive_hint));
                 }
             });
             binding.chartQuizScores.animateX(600);
@@ -277,7 +315,7 @@ public class ProgressActivity extends AppCompatActivity {
 
         if (a == 0 && c == 0) {
             binding.chartTasks.clear();
-            binding.chartTasks.setNoDataText(getString(com.example.studysync_project.R.string.progress_no_tasks_data));
+            binding.chartTasks.setNoDataText(getString(R.string.progress_no_tasks_data));
             binding.chartTasks.invalidate();
             return;
         }
@@ -303,7 +341,7 @@ public class ProgressActivity extends AppCompatActivity {
                 }
                 PieEntry entry = (PieEntry) e;
                 setInteractiveInsight(getString(
-                        com.example.studysync_project.R.string.progress_interactive_tasks_format,
+                        R.string.progress_interactive_tasks_format,
                         entry.getLabel(),
                         Math.round(entry.getValue())
                 ));
@@ -311,16 +349,131 @@ public class ProgressActivity extends AppCompatActivity {
 
             @Override
             public void onNothingSelected() {
-                setInteractiveInsight(getString(com.example.studysync_project.R.string.progress_interactive_hint));
+                setInteractiveInsight(getString(R.string.progress_interactive_hint));
             }
         });
         binding.chartTasks.animateY(600);
         binding.chartTasks.invalidate();
     }
 
+    private void requestAnalyticsInsight() {
+        if (analyticsInsightLoading) {
+            return;
+        }
+
+        if (BuildConfig.GEMINI_API_KEY == null || BuildConfig.GEMINI_API_KEY.trim().isEmpty()) {
+            binding.tvAnalyticsAiInsight.setText(getString(R.string.progress_ai_missing_key));
+            return;
+        }
+
+        if (!NetworkUtil.isNetworkAvailable(this)) {
+            binding.tvAnalyticsAiInsight.setText(getString(R.string.progress_ai_offline));
+            return;
+        }
+
+        setAnalyticsInsightLoading(true);
+        String snapshot = buildAnalyticsSnapshot();
+        GeminiApiClient.generateAnalyticsInsight(snapshot).enqueue(new Callback<JsonObject>() {
+            @Override
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                setAnalyticsInsightLoading(false);
+                if (!response.isSuccessful() || response.body() == null) {
+                    binding.tvAnalyticsAiInsight.setText(getString(R.string.progress_ai_failed));
+                    return;
+                }
+
+                String text = extractGeminiText(response.body());
+                if (text == null || text.trim().isEmpty()) {
+                    binding.tvAnalyticsAiInsight.setText(getString(R.string.progress_ai_failed));
+                    return;
+                }
+                binding.tvAnalyticsAiInsight.setText(text.trim());
+            }
+
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+                setAnalyticsInsightLoading(false);
+                binding.tvAnalyticsAiInsight.setText(getString(R.string.progress_ai_failed));
+            }
+        });
+    }
+
+    private void setAnalyticsInsightLoading(boolean loading) {
+        analyticsInsightLoading = loading;
+        binding.progressAnalyticsAi.setVisibility(loading ? View.VISIBLE : View.GONE);
+        binding.btnGenerateAnalyticsInsight.setEnabled(!loading);
+        binding.btnGenerateAnalyticsInsight.setText(
+                loading ? R.string.progress_ai_generating : R.string.progress_ai_generate
+        );
+    }
+
+    private String buildAnalyticsSnapshot() {
+        StringBuilder snapshot = new StringBuilder();
+        snapshot.append("User ID: ").append(userId != null ? userId : "unknown").append("\n");
+
+        snapshot.append("Average score (quiz-normalized): ")
+                .append(String.format(Locale.getDefault(), "%.1f%%", averageScoreQuizNormalized))
+                .append("\n");
+        if (averageScoreModuleNormalized != null) {
+            snapshot.append("Average score (module-normalized): ")
+                    .append(String.format(Locale.getDefault(), "%.1f%%", averageScoreModuleNormalized))
+                    .append("\n");
+        } else {
+            snapshot.append("Average score (module-normalized): N/A\n");
+        }
+
+        snapshot.append("Total study minutes: ").append(totalStudyMinutes).append("\n");
+        snapshot.append("Tasks pending/completed: ")
+                .append(activeTaskCount)
+                .append("/")
+                .append(completedTaskCount)
+                .append("\n");
+
+        if (latestProfile != null) {
+            snapshot.append("Progression index: ")
+                    .append(String.format(Locale.getDefault(), "%.1f", latestProfile.getProgressionIndex()))
+                    .append("\n");
+            snapshot.append("Progression state: ")
+                    .append(ProgressionRepository.formatStateLabel(latestProfile.getProgressionState()))
+                    .append("\n");
+            snapshot.append("Progression delta: ")
+                    .append(String.format(Locale.getDefault(), "%+.1f", latestProfile.getProgressionDelta()))
+                    .append("\n");
+            snapshot.append("Weekly study minutes: ")
+                    .append(latestProfile.getStudyMinutesLast7Days())
+                    .append("\n");
+            snapshot.append("Weekly normalized average score: ")
+                    .append(String.format(Locale.getDefault(), "%.1f%%", latestProfile.getAverageQuizScoreLast7Days()))
+                    .append("\n");
+
+            String focus = latestProfile.getFocusSubject() != null ? latestProfile.getFocusSubject().trim() : "";
+            String strongest = latestProfile.getStrongestSubject() != null ? latestProfile.getStrongestSubject().trim() : "";
+            snapshot.append("Focus subject: ").append(focus.isEmpty() ? "N/A" : focus).append("\n");
+            snapshot.append("Strongest subject: ").append(strongest.isEmpty() ? "N/A" : strongest).append("\n");
+        }
+
+        return snapshot.toString();
+    }
+
+    private static String extractGeminiText(JsonObject body) {
+        if (body == null) {
+            return null;
+        }
+        try {
+            return body.getAsJsonArray("candidates")
+                    .get(0).getAsJsonObject()
+                    .getAsJsonObject("content")
+                    .getAsJsonArray("parts")
+                    .get(0).getAsJsonObject()
+                    .get("text").getAsString();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private void setInteractiveInsight(String message) {
         if (message == null || message.trim().isEmpty()) {
-            binding.tvInteractiveInsight.setText(getString(com.example.studysync_project.R.string.progress_interactive_hint));
+            binding.tvInteractiveInsight.setText(getString(R.string.progress_interactive_hint));
             return;
         }
         binding.tvInteractiveInsight.setText(message);

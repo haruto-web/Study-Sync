@@ -23,6 +23,7 @@ import com.google.firebase.auth.FirebaseUser;
 public class MainActivity extends AppCompatActivity {
 
     public static final String EXTRA_DEFERRED_SETUP_MESSAGE = "extra_deferred_setup_message";
+    public static final String EXTRA_OPEN_TAB_ID = "extra_open_tab_id";
 
     private ActivityMainBinding binding;
     private FirestoreSyncUtil syncUtil;
@@ -61,10 +62,19 @@ public class MainActivity extends AppCompatActivity {
             NavigationUI.setupWithNavController(binding.bottomNavigation, navController);
         }
 
+        handleRequestedNavigation(getIntent());
+
         String deferredSetupMessage = getIntent().getStringExtra(EXTRA_DEFERRED_SETUP_MESSAGE);
         if (deferredSetupMessage != null && !deferredSetupMessage.trim().isEmpty()) {
             showDeferredSetupBanner(deferredSetupMessage);
         }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleRequestedNavigation(intent);
     }
 
     public void navigateTo(int navItemId) {
@@ -75,5 +85,16 @@ public class MainActivity extends AppCompatActivity {
         Snackbar.make(binding.getRoot(), message, Snackbar.LENGTH_LONG)
                 .setAnchorView(binding.bottomNavigation)
                 .show();
+    }
+
+    private void handleRequestedNavigation(Intent intent) {
+        if (intent == null || binding == null) {
+            return;
+        }
+
+        int tabId = intent.getIntExtra(EXTRA_OPEN_TAB_ID, 0);
+        if (tabId != 0) {
+            binding.bottomNavigation.setSelectedItemId(tabId);
+        }
     }
 }

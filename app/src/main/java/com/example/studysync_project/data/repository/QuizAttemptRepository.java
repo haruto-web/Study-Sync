@@ -6,6 +6,7 @@ import androidx.lifecycle.LiveData;
 
 import com.example.studysync_project.data.db.AppDatabase;
 import com.example.studysync_project.data.db.dao.QuizAttemptDao;
+import com.example.studysync_project.data.progression.ContentProgressionManager;
 import com.example.studysync_project.data.model.QuizAttempt;
 import com.example.studysync_project.data.progression.ProgressionRepository;
 import com.example.studysync_project.utils.AppExecutors;
@@ -17,11 +18,13 @@ public class QuizAttemptRepository {
     private final QuizAttemptDao quizAttemptDao;
     private final FirebaseFirestore firestore;
     private final ProgressionRepository progressionRepository;
+    private final ContentProgressionManager contentProgressionManager;
 
     public QuizAttemptRepository(Context context) {
         this.quizAttemptDao = AppDatabase.getInstance(context).quizAttemptDao();
         this.firestore = FirebaseFirestore.getInstance();
         this.progressionRepository = new ProgressionRepository(context);
+        this.contentProgressionManager = new ContentProgressionManager(context);
     }
 
     public LiveData<List<QuizAttempt>> getAllQuizAttemptsForUser(String userId) {
@@ -60,6 +63,10 @@ public class QuizAttemptRepository {
         return quizAttemptDao.getAverageScoreForUser(userId);
     }
 
+    public LiveData<Double> getAverageScoreForUserByModule(String userId) {
+        return quizAttemptDao.getAverageScoreForUserByModule(userId);
+    }
+
     public LiveData<Integer> getTotalQuizAttemptsForUser(String userId) {
         return quizAttemptDao.getTotalQuizAttemptsForUser(userId);
     }
@@ -70,11 +77,14 @@ public class QuizAttemptRepository {
 
     public void saveQuizAttempt(QuizAttempt attempt, String userId) {
         attempt.setUserId(userId);
-        AppExecutors.diskIO().execute(() -> quizAttemptDao.insertQuizAttempt(attempt));
+        AppExecutors.diskIO().execute(() -> {
+            quizAttemptDao.insertQuizAttempt(attempt);
+            contentProgressionManager.onQuizAttemptSaved(userId, attempt.getQuizId());
+            progressionRepository.recomputeAndPersistForSync(userId);
+        });
         firestore.collection("users").document(userId)
                 .collection("quizAttempts").document(attempt.getAttemptId())
                 .set(attempt).addOnFailureListener(Throwable::printStackTrace);
-        progressionRepository.recomputeProgressionAsync(userId);
     }
 
     public void deleteQuizAttempt(String userId, String attemptId) {
@@ -90,6 +100,11 @@ public class QuizAttemptRepository {
                     List<QuizAttempt> attempts = snap.toObjects(QuizAttempt.class);
                     AppExecutors.diskIO().execute(() -> {
                         quizAttemptDao.insertAllQuizAttempts(attempts);
+                        for (QuizAttempt attempt : attempts) {
+                            if (attempt != null) {
+                                contentProgressionManager.onQuizAttemptSaved(userId, attempt.getQuizId());
+                            }
+                        }
                         progressionRepository.recomputeAndPersistForSync(userId);
                     });
                 })

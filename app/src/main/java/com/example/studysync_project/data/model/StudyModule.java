@@ -12,6 +12,10 @@ import com.google.firebase.firestore.PropertyName;
  */
 @Entity(tableName = "study_modules")
 public class StudyModule {
+    public static final String PROGRESSION_NEW = "NEW";
+    public static final String PROGRESSION_IN_PROGRESS = "IN_PROGRESS";
+    public static final String PROGRESSION_MASTERED = "MASTERED";
+
     @PrimaryKey
     @NonNull
     public String moduleId;
@@ -33,8 +37,17 @@ public class StudyModule {
 
     public boolean isArchived;
 
+    public String progressionState;
+    public int unlockOrder;
+    public boolean isUnlocked;
+    public long startedAt;
+    public long completedAt;
+    public double masteryScore;
+    public int masteryAttempts;
+
     public StudyModule() {
         this.moduleId = "";
+        applyDefaultProgression();
     }
 
     @Ignore
@@ -60,6 +73,17 @@ public class StudyModule {
         this.createdAt = System.currentTimeMillis();
         this.updatedAt = System.currentTimeMillis();
         this.isArchived = false;
+        applyDefaultProgression();
+    }
+
+    private void applyDefaultProgression() {
+        this.progressionState = PROGRESSION_NEW;
+        this.unlockOrder = 0;
+        this.isUnlocked = true;
+        this.startedAt = 0L;
+        this.completedAt = 0L;
+        this.masteryScore = 0.0;
+        this.masteryAttempts = 0;
     }
 
     @NonNull
@@ -75,6 +99,13 @@ public class StudyModule {
     public long getCreatedAt() { return createdAt; }
     public long getUpdatedAt() { return updatedAt; }
     public boolean isArchived() { return isArchived; }
+    public String getProgressionState() { return progressionState; }
+    public int getUnlockOrder() { return unlockOrder; }
+    public boolean isUnlocked() { return isUnlocked; }
+    public long getStartedAt() { return startedAt; }
+    public long getCompletedAt() { return completedAt; }
+    public double getMasteryScore() { return masteryScore; }
+    public int getMasteryAttempts() { return masteryAttempts; }
 
     public void setModuleId(@NonNull String moduleId) { this.moduleId = moduleId; }
     public void setUserId(String userId) { this.userId = userId; }
@@ -88,4 +119,11 @@ public class StudyModule {
     public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
     public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
     public void setArchived(boolean archived) { isArchived = archived; }
+    public void setProgressionState(String progressionState) { this.progressionState = progressionState; }
+    public void setUnlockOrder(int unlockOrder) { this.unlockOrder = unlockOrder; }
+    public void setUnlocked(boolean unlocked) { isUnlocked = unlocked; }
+    public void setStartedAt(long startedAt) { this.startedAt = startedAt; }
+    public void setCompletedAt(long completedAt) { this.completedAt = completedAt; }
+    public void setMasteryScore(double masteryScore) { this.masteryScore = masteryScore; }
+    public void setMasteryAttempts(int masteryAttempts) { this.masteryAttempts = masteryAttempts; }
 }

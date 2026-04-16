@@ -2,6 +2,8 @@ package com.example.studysync_project.ui.home;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,6 +15,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.example.studysync_project.MainActivity;
 import com.example.studysync_project.R;
 import com.example.studysync_project.data.model.StudyModule;
 import com.example.studysync_project.data.model.UserProfile;
@@ -29,6 +32,7 @@ import com.example.studysync_project.ui.quiz.ModuleDetailActivity;
 import com.example.studysync_project.ui.quiz.StudyModuleAdapter;
 import com.example.studysync_project.ui.quiz.UploadModuleActivity;
 import com.example.studysync_project.utils.ConsentManager;
+import com.example.studysync_project.utils.FocusTimerSessionStore;
 import com.example.studysync_project.utils.ReadyModuleCatalog;
 import com.example.studysync_project.data.progression.ProgressionRepository;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -82,6 +86,17 @@ public class HomeFragment extends Fragment {
     private String profileSubject;
     private String profileTopicsCsv;
     private final Set<String> unlockedBadges = new LinkedHashSet<>();
+    private final Handler focusUiHandler = new Handler(Looper.getMainLooper());
+    private final Runnable focusUiRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (binding == null) {
+                return;
+            }
+            bindCurrentFocusState();
+            focusUiHandler.postDelayed(this, 1000L);
+        }
+    };
 
     @Nullable
     @Override
@@ -104,6 +119,7 @@ public class HomeFragment extends Fragment {
         setupClickListeners();
         setupReadyModules();
         setupSavedModules();
+        bindCurrentFocusState();
     }
 
     private void loadUserData() {
@@ -540,6 +556,41 @@ public class HomeFragment extends Fragment {
         binding.tvWeeklyAnalytics.setOnClickListener(v -> openProgressAnalytics());
         binding.progressWeeklyStudy.setOnClickListener(v -> openProgressAnalytics());
         binding.btnBadgeNotice.setOnClickListener(v -> showBadgeCenter());
+        binding.btnOpenFocusTimer.setOnClickListener(v -> openTimerTab());
+    }
+
+    private void bindCurrentFocusState() {
+        if (binding == null) {
+            return;
+        }
+
+        FocusTimerSessionStore.Snapshot state = FocusTimerSessionStore.getSnapshot(requireContext());
+        if (state == null || !state.active) {
+            binding.cardCurrentFocus.setVisibility(View.GONE);
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        long left = FocusTimerSessionStore.getDisplayMillisLeft(state, now);
+        int progress = FocusTimerSessionStore.getDisplayCompletionPercent(state, now);
+
+        binding.cardCurrentFocus.setVisibility(View.VISIBLE);
+        binding.tvCurrentFocusModule.setText(state.getDisplayModuleTitle());
+        binding.tvCurrentFocusTimer.setText(
+                FocusTimerSessionStore.formatTime(left) + (state.running ? " • Running" : " • Paused")
+        );
+        binding.progressCurrentFocus.setProgress(progress);
+    }
+
+    private void openTimerTab() {
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).navigateTo(R.id.timerFragment);
+            return;
+        }
+
+        Intent intent = new Intent(requireContext(), MainActivity.class);
+        intent.putExtra(MainActivity.EXTRA_OPEN_TAB_ID, R.id.timerFragment);
+        startActivity(intent);
     }
 
     private void openProgressAnalytics() {
@@ -628,8 +679,22 @@ public class HomeFragment extends Fragment {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        focusUiHandler.removeCallbacks(focusUiRunnable);
+        focusUiHandler.post(focusUiRunnable);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        focusUiHandler.removeCallbacks(focusUiRunnable);
+    }
+
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
+        focusUiHandler.removeCallbacks(focusUiRunnable);
         binding = null;
     }
 }

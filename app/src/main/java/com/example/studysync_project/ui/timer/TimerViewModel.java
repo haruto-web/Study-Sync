@@ -6,9 +6,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-import com.example.studysync_project.data.model.TimerSession;
 import com.example.studysync_project.data.repository.TimerRepository;
-import com.example.studysync_project.utils.IdUtil;
 
 public class TimerViewModel extends ViewModel {
 
@@ -28,10 +26,9 @@ public class TimerViewModel extends ViewModel {
     private final MutableLiveData<Boolean> isRunning = new MutableLiveData<>(false);
     private final MutableLiveData<Integer> sessionType = new MutableLiveData<>(TYPE_FOCUS);
     private final MutableLiveData<Integer> sessionCount = new MutableLiveData<>(1);
-    private final TimerSession activeSession = null;
-    // Tracks the start time of the current focus session for logging
-    private long sessionStartTime = 0;
     private String currentSubject = "";
+    private String currentModuleId = "";
+    private String currentModuleTitle = "";
 
     public TimerViewModel(Context context, String userId) {
         this.repository = new TimerRepository(context);
@@ -77,7 +74,6 @@ public class TimerViewModel extends ViewModel {
             service.pauseTimer();
             isRunning.setValue(false);
         } else {
-            if (sessionStartTime == 0) sessionStartTime = System.currentTimeMillis();
             service.resumeTimer();
             isRunning.setValue(true);
         }
@@ -85,32 +81,39 @@ public class TimerViewModel extends ViewModel {
 
     public void onStart(TimerService service) {
         if (service == null) return;
-        sessionStartTime = System.currentTimeMillis();
-        service.startTimer(getDurationForCurrentType());
+        boolean focusSession = (sessionType.getValue() != null ? sessionType.getValue() : TYPE_FOCUS) == TYPE_FOCUS;
+        String subjectArg = focusSession ? currentSubject : "Break";
+        String moduleIdArg = focusSession ? currentModuleId : "";
+        String moduleTitleArg = focusSession ? currentModuleTitle : "";
+        service.startTimer(
+                getDurationForCurrentType(),
+                userId,
+            subjectArg,
+            moduleIdArg,
+            moduleTitleArg,
+                focusSession
+        );
         isRunning.setValue(true);
     }
 
     public void onReset(TimerService service) {
         if (service == null) return;
-        service.resetTimer(getDurationForCurrentType());
+        service.resetTimer(getDurationForCurrentType(), TimerService.END_REASON_ABORTED);
         isRunning.setValue(false);
-        sessionStartTime = 0;
         timerText.setValue(TimerService.formatTime(getDurationForCurrentType()));
         progress.setValue(100);
     }
 
     public void onSkip(TimerService service) {
         if (service == null) return;
-        service.resetTimer(getDurationForCurrentType());
+        service.resetTimer(getDurationForCurrentType(), TimerService.END_REASON_SKIPPED);
         isRunning.setValue(false);
-        sessionStartTime = 0;
         advanceSession();
     }
 
     public void onSessionFinished() {
         isRunning.setValue(false);
         if (sessionType.getValue() == TYPE_FOCUS) {
-            logCompletedSession();
             advanceSession();
         } else {
             // After break, go back to focus
@@ -120,7 +123,6 @@ public class TimerViewModel extends ViewModel {
 
     public void setSessionType(int type, TimerService service) {
         sessionType.setValue(type);
-        sessionStartTime = 0;
         isRunning.setValue(false);
         long duration = getDurationForType(type);
         timerText.setValue(TimerService.formatTime(duration));
@@ -130,6 +132,22 @@ public class TimerViewModel extends ViewModel {
 
     public void setSubject(String subject) {
         this.currentSubject = subject;
+    }
+
+    public void setActiveModule(String moduleId, String moduleTitle, String moduleSubject) {
+        this.currentModuleId = moduleId != null ? moduleId.trim() : "";
+        this.currentModuleTitle = moduleTitle != null ? moduleTitle.trim() : "";
+        if (moduleSubject != null && !moduleSubject.trim().isEmpty()) {
+            this.currentSubject = moduleSubject.trim();
+        }
+    }
+
+    public String getCurrentModuleId() {
+        return currentModuleId;
+    }
+
+    public String getCurrentModuleTitle() {
+        return currentModuleTitle;
     }
 
     private void advanceSession() {
@@ -144,20 +162,6 @@ public class TimerViewModel extends ViewModel {
         } else {
             setSessionType(TYPE_FOCUS, null);
         }
-    }
-
-    private void logCompletedSession() {
-        if (sessionStartTime == 0) return;
-        long endTime = System.currentTimeMillis();
-        int actualMinutes = (int) ((endTime - sessionStartTime) / 60000);
-
-        TimerSession session = new TimerSession(userId, 25, currentSubject, "");
-        session.setSessionId(IdUtil.generateId("session"));
-        session.setCompleted(true);
-        session.setEndTime(endTime);
-        session.setActualDurationMinutes(Math.max(actualMinutes, 1));
-        repository.createTimerSession(session, userId);
-        sessionStartTime = 0;
     }
 
     public long getDurationForCurrentType() {

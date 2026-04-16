@@ -58,10 +58,11 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tv_how_it_works_body"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:lineSpacingExtra="3dp"
-                        android:text="1. Upload your module (PDF, PPT, or TXT)\n2. The module is saved for review anytime\n3. AI analyzes the module and generates a quiz\n4. After the quiz, AI gives personalized study tips"
+                        android:text="1. Upload your module (PDF, PPT, or TXT)\n2. Save it to your library\n3. Read it first\n4. Start quiz later when you are ready"
                         android:textColor="@color/on_primary_container"
                         android:textSize="13sp" />
                 </LinearLayout>
@@ -144,6 +145,7 @@
 
             <!-- Number of questions -->
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_question_count"
                 style="@style/Widget.StudySync.TextInputLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -169,7 +171,7 @@
                 style="@style/Widget.StudySync.Button.Primary"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:text="Analyze and Generate Quiz"
+                android:text="Save Module and Start Reading"
                 android:textColor="@color/on_primary"
                 android:textSize="16sp"
                 android:textStyle="bold"
@@ -196,7 +198,7 @@
                     android:id="@+id/tv_loading_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Analyzing your module..."
+                    android:text="Saving your module..."
                     android:textColor="@color/text_secondary"
                     android:textSize="14sp" />
             </LinearLayout>

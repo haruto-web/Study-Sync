@@ -38,7 +38,11 @@ public class QuizAdapter extends ListAdapter<Quiz, QuizAdapter.QuizViewHolder> {
         @Override
         public boolean areContentsTheSame(@NonNull Quiz oldItem, @NonNull Quiz newItem) {
             return oldItem.getTitle().equals(newItem.getTitle()) &&
-                   oldItem.getTotalQuestions() == newItem.getTotalQuestions();
+                   oldItem.getTotalQuestions() == newItem.getTotalQuestions() &&
+                   oldItem.isUnlocked() == newItem.isUnlocked() &&
+                   oldItem.getAttemptCount() == newItem.getAttemptCount() &&
+                   oldItem.getMasteredAt() == newItem.getMasteredAt() &&
+                   oldItem.getBestScore() == newItem.getBestScore();
         }
     };
 
@@ -74,6 +78,8 @@ public class QuizAdapter extends ListAdapter<Quiz, QuizAdapter.QuizViewHolder> {
 
             boolean linkedToModule = quiz.getModuleId() != null && !quiz.getModuleId().trim().isEmpty();
             binding.tvQuizModule.setVisibility(linkedToModule ? View.VISIBLE : View.GONE);
+            binding.tvQuizProgression.setText(formatProgressionLabel(quiz));
+            binding.getRoot().setAlpha(quiz.isUnlocked() ? 1.0f : 0.65f);
             
             // Set difficulty stars (1-5)
             StringBuilder difficulty = new StringBuilder();
@@ -99,6 +105,19 @@ public class QuizAdapter extends ListAdapter<Quiz, QuizAdapter.QuizViewHolder> {
                     listener.onQuizDelete(quiz);
                 }
             });
+        }
+
+        private String formatProgressionLabel(Quiz quiz) {
+            if (quiz == null || !quiz.isUnlocked()) {
+                return "Locked";
+            }
+            if (quiz.getMasteredAt() > 0L) {
+                return "Mastered";
+            }
+            if (quiz.getAttemptCount() > 0) {
+                return "In Progress";
+            }
+            return "New";
         }
     }
 }

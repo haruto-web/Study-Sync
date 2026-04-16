@@ -42,7 +42,7 @@ public interface QuizDao {
     @Query("SELECT subject FROM quizzes WHERE quizId = :quizId LIMIT 1")
     String getQuizSubjectByIdSync(String quizId);
 
-    @Query("SELECT * FROM quizzes WHERE userId = :userId AND isArchived = 0 ORDER BY createdAt DESC")
+    @Query("SELECT * FROM quizzes WHERE userId = :userId AND isArchived = 0 ORDER BY isUnlocked DESC, createdAt DESC")
     LiveData<List<Quiz>> getAllQuizzesForUser(String userId);
 
     @Query("SELECT * FROM quizzes WHERE subject = :subject AND isArchived = 0 ORDER BY createdAt DESC")
@@ -51,8 +51,11 @@ public interface QuizDao {
     @Query("SELECT * FROM quizzes WHERE difficulty = :difficulty AND isArchived = 0")
     LiveData<List<Quiz>> getQuizzesByDifficulty(int difficulty);
 
-    @Query("SELECT * FROM quizzes WHERE isArchived = 0 ORDER BY createdAt DESC")
+    @Query("SELECT * FROM quizzes WHERE isArchived = 0 ORDER BY isUnlocked DESC, createdAt DESC")
     LiveData<List<Quiz>> getAllActiveQuizzes();
+
+    @Query("SELECT * FROM quizzes WHERE moduleId = :moduleId AND isArchived = 0 ORDER BY createdAt ASC")
+    List<Quiz> getQuizzesForModuleSync(String moduleId);
 
     @Query("DELETE FROM quizzes")
     void clearAllQuizzes();

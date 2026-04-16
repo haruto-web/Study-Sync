@@ -12,13 +12,16 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="@dimen/space_md"
-        android:hint="Task Title">
+        android:hint="Task Title"
+        app:counterEnabled="true"
+        app:counterMaxLength="80">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="text"
+            android:maxLength="80"
             android:maxLines="1" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -28,13 +31,16 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="@dimen/space_md"
-        android:hint="Description (optional)">
+        android:hint="Description (optional)"
+        app:counterEnabled="true"
+        app:counterMaxLength="280">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_description"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textMultiLine"
+            android:maxLength="280"
             android:maxLines="3" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -92,12 +98,47 @@
             android:text="High" />
     </com.google.android.material.chip.ChipGroup>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_pick_start_date"
+            style="@style/Widget.StudySync.Button.Outlined"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="Start"
+            app:cornerRadius="@dimen/radius_sm" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_pick_deadline"
+            style="@style/Widget.StudySync.Button.Outlined"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:text="Deadline"
+            app:cornerRadius="@dimen/radius_sm" />
+    </LinearLayout>
+
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_pick_date"
+        android:id="@+id/btn_pick_deadline_time"
         style="@style/Widget.StudySync.Button.Outlined"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:text="Pick Due Date"
+        android:layout_marginTop="8dp"
+        android:text="Due Time"
         app:cornerRadius="@dimen/radius_sm" />
+
+    <TextView
+        android:id="@+id/tv_deadline_details"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="Notifications and deadline checks follow the selected due time"
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp" />
 
 </LinearLayout>

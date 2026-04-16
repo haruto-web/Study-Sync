@@ -31,10 +31,16 @@ public class Quiz {
     public int difficulty;  // 1-5 scale
     public String moduleId; // Optional link to source StudyModule
     public boolean isArchived;
+    public boolean isUnlocked;
+    public double lastScore;
+    public double bestScore;
+    public int attemptCount;
+    public long masteredAt;
 
     // Constructors
     public Quiz() {
         this.quizId = "";
+        applyProgressionDefaults();
     }
 
     @Ignore
@@ -52,6 +58,15 @@ public class Quiz {
         this.createdAt = System.currentTimeMillis();
         this.updatedAt = System.currentTimeMillis();
         this.isArchived = false;
+        applyProgressionDefaults();
+    }
+
+    private void applyProgressionDefaults() {
+        this.isUnlocked = true;
+        this.lastScore = 0.0;
+        this.bestScore = 0.0;
+        this.attemptCount = 0;
+        this.masteredAt = 0L;
     }
 
     // Getters
@@ -68,6 +83,11 @@ public class Quiz {
     public int getDifficulty() { return difficulty; }
     public String getModuleId() { return moduleId; }
     public boolean isArchived() { return isArchived; }
+    public boolean isUnlocked() { return isUnlocked; }
+    public double getLastScore() { return lastScore; }
+    public double getBestScore() { return bestScore; }
+    public int getAttemptCount() { return attemptCount; }
+    public long getMasteredAt() { return masteredAt; }
 
     // Setters
     public void setQuizId(@NonNull String quizId) { this.quizId = quizId; }
@@ -82,4 +102,9 @@ public class Quiz {
     public void setDifficulty(int difficulty) { this.difficulty = difficulty; }
     public void setModuleId(String moduleId) { this.moduleId = moduleId; }
     public void setArchived(boolean archived) { isArchived = archived; }
+    public void setUnlocked(boolean unlocked) { isUnlocked = unlocked; }
+    public void setLastScore(double lastScore) { this.lastScore = lastScore; }
+    public void setBestScore(double bestScore) { this.bestScore = bestScore; }
+    public void setAttemptCount(int attemptCount) { this.attemptCount = attemptCount; }
+    public void setMasteredAt(long masteredAt) { this.masteredAt = masteredAt; }
 }

@@ -46,6 +46,7 @@ public class QuizResultActivity extends AppCompatActivity {
     public static final String EXTRA_WRONG_QUESTIONS = "wrong_questions";
     public static final String EXTRA_QUESTIONS = "questions";
     public static final String EXTRA_USER_ANSWERS = "user_answers";
+    public static final String EXTRA_TIME_TAKEN_MINUTES = "time_taken_minutes";
 
     private ActivityQuizResultBinding binding;
 
@@ -56,12 +57,13 @@ public class QuizResultActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         int score = getIntent().getIntExtra(EXTRA_SCORE, 0);
-        int total = getIntent().getIntExtra(EXTRA_TOTAL, 1);
+        int total = Math.max(1, getIntent().getIntExtra(EXTRA_TOTAL, 1));
         String quizId = getIntent().getStringExtra(EXTRA_QUIZ_ID);
         String subject = getIntent().getStringExtra(EXTRA_SUBJECT);
         ArrayList<String> wrongQuestions = getIntent().getStringArrayListExtra(EXTRA_WRONG_QUESTIONS);
         ArrayList<Bundle> questions = getParcelableArrayListExtraCompat(getIntent(), EXTRA_QUESTIONS, Bundle.class);
         ArrayList<String> userAnswers = getIntent().getStringArrayListExtra(EXTRA_USER_ANSWERS);
+        int timeTakenMinutes = Math.max(0, getIntent().getIntExtra(EXTRA_TIME_TAKEN_MINUTES, 0));
 
         int percent = (score * 100) / total;
 
@@ -74,7 +76,7 @@ public class QuizResultActivity extends AppCompatActivity {
         binding.tvScoreLabel.setText(getScoreLabel(percent));
 
         // Save attempt then load stats (stats load after save so current attempt is included)
-        saveAttempt(score, total, percent, quizId, subject);
+        saveAttempt(score, total, percent, quizId, subject, timeTakenMinutes);
         observeProgressionHint();
         loadQuizStats(attemptQuizId, score, total, subject, wrongTopics, questions, userAnswers);
 
@@ -312,9 +314,7 @@ public class QuizResultActivity extends AppCompatActivity {
                         }
 
                         String moduleText = extractGeminiText(response.body());
-                        if (moduleText != null) {
-                            moduleText = moduleText.replaceAll("```", "").trim();
-                        }
+                        moduleText = GeminiApiClient.sanitizeModuleOutput(moduleText);
 
                         if (moduleText == null || moduleText.isEmpty()) {
                             Toast.makeText(QuizResultActivity.this,
@@ -376,7 +376,7 @@ public class QuizResultActivity extends AppCompatActivity {
         return "Needs improvement";
     }
 
-    private void saveAttempt(int score, int total, int percent, String quizId, String subject) {
+    private void saveAttempt(int score, int total, int percent, String quizId, String subject, int timeTakenMinutes) {
         String userId = FirebaseAuth.getInstance().getCurrentUser() != null
                 ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
         if (userId == null) return;
@@ -385,7 +385,7 @@ public class QuizResultActivity extends AppCompatActivity {
                 ? quizId
                 : (subject != null ? subject : "");
 
-        QuizAttempt attempt = new QuizAttempt(userId, attemptQuizId, total, score, percent, 0);
+        QuizAttempt attempt = new QuizAttempt(userId, attemptQuizId, total, score, percent, timeTakenMinutes);
         attempt.setAttemptId(IdUtil.generateId("attempt"));
         attempt.setPassed(percent >= 60);
         new QuizAttemptRepository(this).saveQuizAttempt(attempt, userId);

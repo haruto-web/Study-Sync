@@ -2,103 +2,120 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/card_task"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="@dimen/space_sm"
+    android:minHeight="112dp"
     style="@style/Widget.StudySync.Card.Surface">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="@dimen/space_lg"
-        android:gravity="center_vertical">
+        android:orientation="vertical"
+        android:padding="@dimen/space_lg">
 
-        <!-- Checkbox -->
-        <CheckBox
-            android:id="@+id/cb_task_complete"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="12dp" />
-
-        <!-- Task Info -->
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-            <!-- Title -->
-            <TextView
-                android:id="@+id/tv_task_title"
+            <CheckBox
+                android:id="@+id/cb_task_complete"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Task Title"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:textColor="@color/text_primary" />
+                android:layout_marginEnd="10dp" />
 
-            <!-- Description -->
-            <TextView
-                android:id="@+id/tv_task_description"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Description"
-                android:textSize="12sp"
-                android:textColor="@color/text_secondary"
-                android:layout_marginTop="4dp"
-                android:maxLines="1"
-                android:ellipsize="end" />
-
-            <!-- Metadata Row -->
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="8dp">
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-                <!-- Category -->
                 <TextView
-                    android:id="@+id/tv_category"
-                    android:layout_width="wrap_content"
+                    android:id="@+id/tv_task_title"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Category"
-                    android:textSize="11sp"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:text="Task Title"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_task_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:text="Description"
                     android:textColor="@color/text_secondary"
-                    android:layout_marginEnd="12dp" />
-
-                <!-- Priority -->
-                <TextView
-                    android:id="@+id/tv_priority"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="HIGH"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    android:layout_marginEnd="12dp" />
-
-                <!-- Due Date -->
-                <TextView
-                    android:id="@+id/tv_due_date"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Due: Dec 25"
-                    android:textSize="11sp"
-                    android:textColor="@color/text_secondary" />
+                    android:textSize="12sp" />
             </LinearLayout>
+
+            <TextView
+                android:id="@+id/tv_priority"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_chip_surface"
+                android:paddingStart="8dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="4dp"
+                android:text="HIGH"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/btn_delete"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Delete Task"
+                android:padding="10dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_delete" />
 
         </LinearLayout>
 
-        <!-- Delete Button -->
-        <ImageButton
-            android:id="@+id/btn_delete"
+        <TextView
+            android:id="@+id/tv_due_date"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Due: Dec 25"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/tv_category"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/ic_delete"
-            android:contentDescription="Delete Task"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:scaleType="centerInside"
-            android:layout_marginStart="12dp" />
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_chip_surface"
+            android:paddingStart="8dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="4dp"
+            android:text="Category"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_start_focus"
+            style="@style/Widget.StudySync.Button.Outlined"
+            android:layout_width="wrap_content"
+            android:layout_height="38dp"
+            android:layout_marginTop="10dp"
+            android:text="Focus"
+            android:textSize="12sp"
+            app:cornerRadius="8dp" />
 
     </LinearLayout>
 

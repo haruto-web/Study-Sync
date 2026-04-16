@@ -13,7 +13,7 @@
         android:background="@color/primary"
         app:navigationIcon="@drawable/ic_arrow_back"
         app:navigationIconTint="@color/on_primary"
-        app:title="Ask Gemini"
+        app:title="Add Module"
         app:titleTextColor="@color/on_primary" />
 
     <ScrollView
@@ -46,7 +46,7 @@
                     android:layout_height="wrap_content"
                     android:lineSpacingExtra="3dp"
                     android:padding="16dp"
-                    android:text="Tell Gemini what you are currently studying or interested in. It will create a module that is saved to your library, and you can turn it into a quiz immediately or whenever you are ready."
+                    android:text="Create your own module first so it is saved in your Study Library. You can generate quizzes later from any saved module. If needed, you can also draft content with Gemini or analyze an external file."
                     android:textColor="@color/on_primary_container"
                     android:textSize="13sp" />
             </com.google.android.material.card.MaterialCardView>
@@ -56,7 +56,27 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/space_md"
-                android:hint="What are you currently studying?"
+                android:hint="Module title"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusTopStart="12dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_module_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="actionNext"
+                    android:inputType="textCapSentences"
+                    android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.StudySync.TextInputLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/space_md"
+                android:hint="Subject"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
@@ -76,7 +96,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/space_md"
-                android:hint="What topic are you interested in?"
+                android:hint="Topic (optional)"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
@@ -96,7 +116,92 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/space_md"
-                android:hint="Learning goal (optional)"
+                android:hint="Module content"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusTopStart="12dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_module_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="actionNext"
+                    android:inputType="textCapSentences|textMultiLine"
+                    android:maxLines="10"
+                    android:minLines="5"
+                    android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_save_module"
+                style="@style/Widget.StudySync.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginBottom="@dimen/space_lg"
+                android:text="Save Module to Library"
+                android:textColor="@color/on_primary"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/primary"
+                app:cornerRadius="@dimen/radius_md" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/space_sm"
+                android:text="Need help drafting content?"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.StudySync.TextInputLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/space_md"
+                android:hint="Grade level (auto-filled when available)"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusTopStart="12dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_grade_level"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="actionNext"
+                    android:inputType="textCapWords"
+                    android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.StudySync.TextInputLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/space_md"
+                android:hint="Formative assessment: what do you already know?"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusTopStart="12dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_formative_assessment"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="actionNext"
+                    android:inputType="textCapSentences|textMultiLine"
+                    android:maxLines="5"
+                    android:minLines="3"
+                    android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.StudySync.TextInputLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/space_md"
+                android:hint="Learning goal for Gemini draft (optional)"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
@@ -113,37 +218,27 @@
                     android:textSize="15sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.StudySync.TextInputLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/space_lg"
-                android:hint="Quiz questions if you convert now (5-15)"
-                app:boxCornerRadiusBottomEnd="12dp"
-                app:boxCornerRadiusBottomStart="12dp"
-                app:boxCornerRadiusTopEnd="12dp"
-                app:boxCornerRadiusTopStart="12dp">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_question_count"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="number"
-                    android:text="10"
-                    android:textSize="15sp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_generate_module"
                 style="@style/Widget.StudySync.Button.Primary"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:text="Generate Module with Gemini"
+                android:text="Generate Module with AI"
                 android:textColor="@color/on_primary"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 app:backgroundTint="@color/primary"
                 app:cornerRadius="@dimen/radius_md" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_open_external_analysis"
+                style="@style/Widget.StudySync.Button.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="@dimen/space_md"
+                android:text="Upload My PDF/TXT Module"
+                android:textSize="13sp"
+                app:cornerRadius="10dp" />
 
             <LinearLayout
                 android:id="@+id/layout_loading"
@@ -164,7 +259,7 @@
                     android:id="@+id/tv_loading_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Generating your module..."
+                    android:text="Generating your module draft..."
                     android:textColor="@color/text_secondary"
                     android:textSize="14sp" />
             </LinearLayout>
@@ -188,7 +283,7 @@
                         android:id="@+id/tv_generated_module_title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Generated Module"
+                        android:text="Saved Module"
                         android:textColor="@color/text_primary"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -206,6 +301,8 @@
                         android:id="@+id/tv_generated_module_content"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:autoLink="web"
+                        android:linksClickable="true"
                         android:layout_marginTop="10dp"
                         android:lineSpacingExtra="3dp"
                         android:textColor="@color/text_primary"
@@ -225,18 +322,6 @@
                             android:layout_height="40dp"
                             android:text="Review in Library"
                             android:textSize="12sp"
-                            app:cornerRadius="10dp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_generate_quiz_now"
-                            style="@style/Widget.StudySync.Button.Primary"
-                            android:layout_width="wrap_content"
-                            android:layout_height="40dp"
-                            android:layout_marginStart="8dp"
-                            android:text="Turn Into Quiz Now"
-                            android:textColor="@color/on_primary"
-                            android:textSize="12sp"
-                            app:backgroundTint="@color/primary"
                             app:cornerRadius="10dp" />
                     </LinearLayout>
                 </LinearLayout>

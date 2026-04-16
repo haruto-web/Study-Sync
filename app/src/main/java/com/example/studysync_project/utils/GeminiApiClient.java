@@ -75,6 +75,24 @@ public class GeminiApiClient {
         return body;
     }
 
+    public static String sanitizeModuleOutput(String rawText) {
+        if (rawText == null) {
+            return "";
+        }
+
+        String cleaned = rawText
+                .replace("```", "")
+                .replace("**", "")
+                .replace("__", "")
+            .replace("`", "")
+                .replaceAll("(?m)^#{1,6}\\s*", "")
+                .replaceAll("(?m)^\\*\\s+", "- ")
+                .replaceAll("\\r\\n", "\\n")
+                .replaceAll("\\n{3,}", "\\n\\n")
+                .trim();
+        return cleaned;
+    }
+
     /**
      * Generates a quiz JSON from module text
      */
@@ -161,16 +179,45 @@ public class GeminiApiClient {
     }
 
     /**
+     * Generates concise AI insight from analytics dashboard snapshot metrics.
+     */
+    public static Call<JsonObject> generateAnalyticsInsight(String analyticsSummary) {
+        String safeSummary = analyticsSummary != null ? analyticsSummary.trim() : "";
+        if (safeSummary.isEmpty()) {
+            safeSummary = "No analytics snapshot provided.";
+        }
+
+        String prompt = "You are an academic performance coach. "
+                + "Given this StudySync analytics snapshot, write concise guidance in plain text only.\n\n"
+                + "Snapshot:\n" + safeSummary + "\n\n"
+                + "Output format rules:\n"
+                + "1) One short overall assessment sentence.\n"
+                + "2) Exactly 3 bullet points with this structure:\n"
+                + "   - Strength: ...\n"
+                + "   - Risk: ...\n"
+                + "   - Next step (today): ...\n"
+                + "3) Keep total response under 130 words.\n"
+                + "4) Tone: encouraging, specific, and realistic.\n"
+                + "5) Do not use markdown emphasis symbols.\n";
+
+        return getService().generateContent(API_KEY, buildRequestBody(prompt));
+    }
+
+    /**
      * Generates a complete study module from the learner's current topic or interest.
      */
     public static Call<JsonObject> generateTopicStudyModule(
             String currentStudyTopic,
             String interestTopic,
-            String learningGoal
+            String learningGoal,
+            String gradeLevel,
+            String formativeAssessment
     ) {
         String safeCurrentTopic = currentStudyTopic != null ? currentStudyTopic.trim() : "";
         String safeInterestTopic = interestTopic != null ? interestTopic.trim() : "";
         String safeGoal = learningGoal != null ? learningGoal.trim() : "";
+        String safeGradeLevel = gradeLevel != null ? gradeLevel.trim() : "";
+        String safeFormativeAssessment = formativeAssessment != null ? formativeAssessment.trim() : "";
 
         String primaryTopic;
         if (!safeCurrentTopic.isEmpty()) {
@@ -189,22 +236,39 @@ public class GeminiApiClient {
             safeGoal = "Build strong conceptual understanding and practical recall";
         }
 
+        if (safeGradeLevel.isEmpty()) {
+            safeGradeLevel = "Not specified";
+        }
+
+        if (safeFormativeAssessment.isEmpty()) {
+            safeFormativeAssessment = "Learner did not provide a formative assessment.";
+        }
+
         StringBuilder prompt = new StringBuilder();
         prompt.append("You are an educational tutor. Create a high-quality study module for a student.\n")
                 .append("Primary topic: ").append(primaryTopic).append("\n")
+                .append("Grade level: ").append(safeGradeLevel).append("\n")
                 .append("Current study context: ").append(safeCurrentTopic.isEmpty() ? "Not specified" : safeCurrentTopic).append("\n")
                 .append("Interest focus: ").append(safeInterestTopic).append("\n")
+                .append("Formative assessment response from learner: ").append(safeFormativeAssessment).append("\n")
                 .append("Learning goal: ").append(safeGoal).append("\n\n")
+                .append("Use the formative assessment to infer what the learner already knows and what misconceptions exist.\n")
                 .append("Write between 500 and 700 words and include these sections in plain text:\n")
                 .append("1) Title\n")
                 .append("2) Why this topic matters\n")
-                .append("3) Core ideas explained simply\n")
-                .append("4) Real-world examples\n")
-                .append("5) Common mistakes and fixes\n")
-                .append("6) Quick self-check questions\n")
-                .append("7) 20-minute study plan\n\n")
-                .append("Use clear, student-friendly language. Keep it practical and accurate. ")
-                .append("Return plain text only. Do not return JSON, markdown code fences, or extra commentary.");
+                .append("3) What you already know (derived from the formative assessment)\n")
+                .append("4) Core ideas explained simply\n")
+                .append("5) Misconceptions to fix first\n")
+                .append("6) Real-world examples\n")
+                .append("7) Quick self-check questions\n")
+                .append("8) 20-minute study plan\n")
+                .append("9) Image suggestions (optional): provide up to 3 trusted educational image URLs with a one-line note each; if unavailable, write 'No verified image link available.'\n")
+                .append("10) References (APA 7th edition): provide 3 to 6 credible sources in APA format, include URLs when available\n\n")
+                .append("Formatting rules:\n")
+                .append("- Plain text only\n")
+                .append("- Do NOT use markdown symbols such as **, __, #, *, or code fences\n")
+                .append("- Keep language clear, student-friendly, practical, and accurate\n")
+                .append("- Avoid placeholders like TBD or example.com\n");
 
         return getService().generateContent(API_KEY, buildRequestBody(prompt.toString()));
     }
@@ -242,8 +306,13 @@ public class GeminiApiClient {
                 .append("3) Core concepts explained simply\n")
                 .append("4) Common mistakes and how to avoid them\n")
                 .append("5) A short practice checklist\n")
+                .append("6) Image suggestions (optional): provide up to 3 trusted educational image URLs with a one-line note each; if unavailable, write 'No verified image link available.'\n")
+                .append("7) References (APA 7th edition): provide 3 to 6 credible sources in APA format, include URLs when available\n")
                 .append("Focus strongly on the current topic interest while also addressing weak areas shown by quiz mistakes.\n")
-                .append("Return plain text only. Do not return JSON, markdown code fences, or extra commentary.");
+                .append("Formatting rules:\n")
+                .append("- Plain text only\n")
+                .append("- Do NOT use markdown symbols such as **, __, #, *, or code fences\n")
+                .append("- Avoid placeholders like TBD or example.com\n");
 
             return getService().generateContent(API_KEY, buildRequestBody(prompt.toString()));
             }

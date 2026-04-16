@@ -1,10 +1,12 @@
 package com.example.studysync_project.ui.ar;
 
 import android.Manifest;
+import android.content.Intent;
 import android.graphics.Color;
 import android.content.pm.PackageManager;
-import android.os.Build;
+import android.content.res.Configuration;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -55,6 +57,7 @@ import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.ArSceneView;
+import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.Scene;
 import com.google.ar.sceneform.math.Quaternion;
 import com.google.ar.sceneform.math.Vector3;
@@ -127,6 +130,7 @@ public class ArFlashcardFragment extends Fragment {
     private boolean questionSessionInitialized;
     private boolean noQuestionsToastShown;
     private boolean isGeneratingAiInsight;
+    private long quizSessionStartedAtMillis;
     private String activeQuizId;
     private String activeQuizSubject = "General";
     private final List<String> userAnswers = new ArrayList<>();
@@ -165,7 +169,7 @@ public class ArFlashcardFragment extends Fragment {
             applyArControlPanelState();
         });
         applyArControlPanelState();
-        binding.btnPlaceArCard.setOnClickListener(v -> placeCurrentCardInFrontOfCamera());
+        binding.btnPlaceArCard.setOnClickListener(v -> handlePlaceCardTap());
 
         binding.btnClearAr.setOnClickListener(v -> {
             if (arSceneView == null) {
@@ -264,33 +268,16 @@ public class ArFlashcardFragment extends Fragment {
             applyArControlPanelState();
         } catch (Throwable t) {
             Log.e(TAG, "Failed to switch AR mode", t);
+            if (handleFaceModeRuntimeFailure(t)) {
+                return;
+            }
             showArUnavailable(getString(R.string.ar_session_not_ready, safeMessage(t)));
         }
     }
 
     private boolean isFaceModeAllowedOnDevice() {
-        String manufacturer = safeLower(Build.MANUFACTURER);
-        String brand = safeLower(Build.BRAND);
-        String model = safeLower(Build.MODEL);
-        String fingerprint = safeLower(Build.FINGERPRINT);
-
-        return !(manufacturer.contains("transsion")
-                || manufacturer.contains("infinix")
-                || manufacturer.contains("tecno")
-                || manufacturer.contains("itel")
-                || brand.contains("transsion")
-                || brand.contains("infinix")
-                || brand.contains("tecno")
-                || brand.contains("itel")
-                || model.contains("x6855")
-                || fingerprint.contains("transsion")
-                || fingerprint.contains("infinix")
-                || fingerprint.contains("tecno")
-                || fingerprint.contains("itel"));
-    }
-
-    private String safeLower(String value) {
-        return value == null ? "" : value.toLowerCase(Locale.US);
+        // Let all devices attempt face mode; runtime camera/config checks still fallback safely.
+        return true;
     }
 
     private void syncModeToggleSelection() {
@@ -321,20 +308,32 @@ public class ArFlashcardFragment extends Fragment {
                 : R.string.ar_mode_surface_active);
     }
 
-    private void placeCurrentCardInFrontOfCamera() {
+    private void handlePlaceCardTap() {
         if (arSceneView == null) {
             Toast.makeText(requireContext(), "AR scene is not ready.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String text = getCurrentCardText();
-        if (text.isEmpty()) {
-            Toast.makeText(requireContext(), "Enter flashcard text first", Toast.LENGTH_SHORT).show();
+        Frame frame = arSceneView.getArFrame();
+        if (frame == null) {
+            Toast.makeText(requireContext(), getString(R.string.ar_place_card_retry), Toast.LENGTH_SHORT).show();
             return;
         }
 
-        Frame frame = arSceneView.getArFrame();
-        if (frame == null || !placeFlashcardInFrontOfCamera(frame, text)) {
+        if (shouldUseArTapAnswerPlacement()) {
+            if (!placeCurrentQuestionCardsInFrontOfCamera(frame)) {
+                Toast.makeText(requireContext(), getString(R.string.ar_place_card_retry), Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
+
+        String text = getCurrentCardText();
+        if (text.isEmpty()) {
+            Toast.makeText(requireContext(), getString(R.string.ar_no_questions_loaded), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!placeFlashcardInFrontOfCamera(frame, text)) {
             Toast.makeText(requireContext(), getString(R.string.ar_place_card_retry), Toast.LENGTH_SHORT).show();
         }
     }
@@ -438,9 +437,15 @@ public class ArFlashcardFragment extends Fragment {
         } catch (UnavailableDeviceNotCompatibleException e) {
             showArUnavailable("This device does not support ARCore.");
         } catch (Exception e) {
+            if (handleFaceModeRuntimeFailure(e)) {
+                return;
+            }
             showArUnavailable(getString(R.string.ar_session_not_ready, safeMessage(e)));
         } catch (Throwable t) {
             Log.e(TAG, "Unexpected AR session startup failure", t);
+            if (handleFaceModeRuntimeFailure(t)) {
+                return;
+            }
             showArUnavailable(getString(R.string.ar_session_not_ready, safeMessage(t)));
         }
     }
@@ -458,7 +463,30 @@ public class ArFlashcardFragment extends Fragment {
         arSceneView.getScene().addOnPeekTouchListener((hitTestResult, motionEvent) -> {
             if (motionEvent.getAction() != MotionEvent.ACTION_UP) return;
             if (faceTrackingModeEnabled) return;
+
+            if (hitTestResult != null && hitTestResult.getNode() != null) {
+                return;
+            }
+
             showTapFocusIndicator(motionEvent);
+
+            Frame frame = arSceneView.getArFrame();
+            if (frame == null) return;
+
+            if (shouldUseArTapAnswerPlacement()) {
+                List<HitResult> hits = frame.hitTest(motionEvent);
+                HitResult placementHit = pickPlacementHit(hits);
+                if (placementHit != null) {
+                    placeCurrentQuestionCards(placementHit.createAnchor());
+                    return;
+                }
+
+                boolean fallbackPlaced = placeCurrentQuestionCardsInFrontOfCamera(frame);
+                if (!fallbackPlaced) {
+                    Toast.makeText(requireContext(), getString(R.string.ar_surface_not_ready), Toast.LENGTH_SHORT).show();
+                }
+                return;
+            }
 
             String text = getCurrentCardText();
             if (text.isEmpty()) {
@@ -466,8 +494,6 @@ public class ArFlashcardFragment extends Fragment {
                 return;
             }
 
-            Frame frame = arSceneView.getArFrame();
-            if (frame == null) return;
             List<HitResult> hits = frame.hitTest(motionEvent);
             HitResult placementHit = pickPlacementHit(hits);
             if (placementHit != null) {
@@ -498,6 +524,7 @@ public class ArFlashcardFragment extends Fragment {
                     binding.cardArFaceQuiz.setVisibility(View.GONE);
                 }
                 trackedFace = null;
+                maybeAutoPlaceCurrentQuestionCards();
                 return;
             }
 
@@ -616,7 +643,75 @@ public class ArFlashcardFragment extends Fragment {
         }
     }
 
-    private void faceNodeToCamera(TransformableNode node) {
+    private boolean shouldUseArTapAnswerPlacement() {
+        return !faceTrackingModeEnabled
+                && getCurrentQuestion() != null
+                && !isQuizCompleted;
+    }
+
+    private boolean placeCurrentQuestionCardsInFrontOfCamera(Frame frame) {
+        if (arSceneView == null || arSceneView.getSession() == null) {
+            return false;
+        }
+
+        try {
+            Camera camera = frame.getCamera();
+            if (camera.getTrackingState() != TrackingState.TRACKING) {
+                return false;
+            }
+
+            Pose cameraPose = camera.getPose();
+            Pose cardPose = cameraPose.compose(Pose.makeTranslation(
+                    0f,
+                    -0.06f,
+                    -CARD_PLACEMENT_DISTANCE_METERS
+            ));
+
+            Anchor anchor = arSceneView.getSession().createAnchor(cardPose);
+            placeCurrentQuestionCards(anchor);
+            return true;
+        } catch (Throwable t) {
+            Log.w(TAG, "Unable to place AR quiz cards in front of camera", t);
+            return false;
+        }
+    }
+
+    private void placeCurrentQuestionCards(Anchor anchor) {
+        if (arSceneView == null) {
+            try {
+                anchor.detach();
+            } catch (Throwable detachError) {
+                Log.w(TAG, "Failed to detach quiz anchor when AR scene is unavailable", detachError);
+            }
+            return;
+        }
+
+        Question question = getCurrentQuestion();
+        if (question == null || isQuizCompleted) {
+            try {
+                anchor.detach();
+            } catch (Throwable detachError) {
+                Log.w(TAG, "Failed to detach stale quiz anchor", detachError);
+            }
+            return;
+        }
+
+        clearPlacedNodes();
+
+        String progress = getString(
+                R.string.ar_question_progress,
+                selectedQuestionIndex + 1,
+                selectedQuestions.size()
+        );
+        String questionText = nonEmptyOrFallback(
+                question.getQuestionText(),
+                getString(R.string.ar_question_text_fallback)
+        );
+        placeFlashcard(anchor, progress + "\n" + questionText);
+        setAnswerFeedback(getString(R.string.ar_answer_select_prompt));
+    }
+
+    private void faceNodeToCamera(Node node) {
         if (arSceneView == null) {
             return;
         }
@@ -651,7 +746,40 @@ public class ArFlashcardFragment extends Fragment {
         startArIfPossible();
     }
 
+    private boolean handleFaceModeRuntimeFailure(Throwable throwable) {
+        if (requestedMode != ArExperienceMode.FACE) {
+            return false;
+        }
+
+        Log.w(TAG, "Face AR mode failed at runtime, switching to surface mode", throwable);
+        requestedMode = ArExperienceMode.SURFACE;
+        faceTrackingModeEnabled = false;
+        arModeStatusOverrideResId = R.string.ar_mode_face_fallback;
+        pendingArModeToastResId = R.string.ar_mode_face_fallback;
+        syncModeToggleSelection();
+
+        try {
+            if (arSceneView != null) {
+                arSceneView.pause();
+                Session previous = arSceneView.getSession();
+                if (previous != null) {
+                    previous.close();
+                }
+            }
+        } catch (Throwable closeError) {
+            Log.w(TAG, "Failed to close AR session during face-mode fallback", closeError);
+        }
+
+        if (binding != null) {
+            binding.getRoot().post(this::startArIfPossible);
+        }
+        return true;
+    }
+
     private String safeMessage(Throwable throwable) {
+        if (throwable instanceof IllegalArgumentException) {
+            return "Unsupported AR camera configuration on this device.";
+        }
         String message = throwable.getMessage();
         if (message == null || message.trim().isEmpty()) {
             return throwable.getClass().getSimpleName();
@@ -777,15 +905,30 @@ public class ArFlashcardFragment extends Fragment {
             pendingArModeToastResId = null;
         }
         updateFaceQuizCardContent();
+        updatePortraitOverflowHint();
+        maybeAutoPlaceCurrentQuestionCards();
+        applyArControlPanelState();
     }
 
     private void applyArControlPanelState() {
         if (binding == null) {
             return;
         }
-        binding.layoutArControlsBody.setVisibility(controlsExpanded ? View.VISIBLE : View.GONE);
+
+        boolean hasActiveQuestion = getCurrentQuestion() != null;
+        boolean showSetupControls = controlsExpanded || faceTrackingModeEnabled || !hasActiveQuestion;
+
+        binding.layoutArControlsBody.setVisibility(View.VISIBLE);
+        binding.tvArModeTitle.setVisibility(showSetupControls ? View.VISIBLE : View.GONE);
+        binding.toggleArMode.setVisibility(showSetupControls ? View.VISIBLE : View.GONE);
+        binding.tvArModeStatus.setVisibility(showSetupControls ? View.VISIBLE : View.GONE);
+        binding.tilQuizSelector.setVisibility(showSetupControls ? View.VISIBLE : View.GONE);
+        binding.tilFlashcardText.setVisibility(showSetupControls && !faceTrackingModeEnabled ? View.VISIBLE : View.GONE);
+        binding.layoutArSurfaceActions.setVisibility(showSetupControls && !faceTrackingModeEnabled ? View.VISIBLE : View.GONE);
+        binding.cardArQuestionPanel.setVisibility(!faceTrackingModeEnabled ? View.VISIBLE : View.GONE);
+
         binding.btnToggleArControls.setText(
-                controlsExpanded ? R.string.ar_hide_controls : R.string.ar_show_controls
+                showSetupControls ? R.string.ar_hide_controls : R.string.ar_show_controls
         );
     }
 
@@ -916,6 +1059,7 @@ public class ArFlashcardFragment extends Fragment {
                         return;
                     }
                     updateQuestionPanel();
+                    placeCurrentQuestionCardsInFrontOfCameraIfReady();
                 }, 450L);
             }
         }
@@ -939,6 +1083,29 @@ public class ArFlashcardFragment extends Fragment {
         }
 
         updateQuestionPanel();
+        placeCurrentQuestionCardsInFrontOfCameraIfReady();
+    }
+
+    private void placeCurrentQuestionCardsInFrontOfCameraIfReady() {
+        maybeAutoPlaceCurrentQuestionCards();
+    }
+
+    private void maybeAutoPlaceCurrentQuestionCards() {
+        if (arSceneView == null || !shouldUseArTapAnswerPlacement()) {
+            return;
+        }
+
+        // Stop retrying once a card anchor is already active in the scene.
+        if (!placedNodes.isEmpty()) {
+            return;
+        }
+
+        Frame frame = arSceneView.getArFrame();
+        if (frame == null) {
+            return;
+        }
+
+        placeCurrentQuestionCardsInFrontOfCamera(frame);
     }
 
     private void completeArQuizSession() {
@@ -962,8 +1129,101 @@ public class ArFlashcardFragment extends Fragment {
         }
 
         updateScoreLabel();
-        saveArQuizAttempt();
-        requestAiInsightForCompletedQuiz();
+        openArQuizResult();
+    }
+
+    private void openArQuizResult() {
+        if (!isAdded() || selectedQuestions == null || selectedQuestions.isEmpty()) {
+            return;
+        }
+
+        ArrayList<Bundle> questionBundles = buildQuestionBundlesForResult();
+        ArrayList<String> userAnswerList = buildUserAnswersForResult();
+        ArrayList<String> wrongQuestions = buildWrongQuestionTextsForResult();
+
+        int elapsedMinutes = 0;
+        if (quizSessionStartedAtMillis > 0L) {
+            elapsedMinutes = (int) ((System.currentTimeMillis() - quizSessionStartedAtMillis) / 60000L);
+        }
+
+        Intent resultIntent = new Intent(requireContext(), com.example.studysync_project.ui.quiz.QuizResultActivity.class);
+        resultIntent.putExtra(com.example.studysync_project.ui.quiz.QuizResultActivity.EXTRA_SCORE, correctAnswerCount);
+        resultIntent.putExtra(com.example.studysync_project.ui.quiz.QuizResultActivity.EXTRA_TOTAL, selectedQuestions.size());
+        resultIntent.putExtra(com.example.studysync_project.ui.quiz.QuizResultActivity.EXTRA_SUBJECT, activeQuizSubject);
+        resultIntent.putExtra(com.example.studysync_project.ui.quiz.QuizResultActivity.EXTRA_QUIZ_ID, activeQuizId);
+        resultIntent.putStringArrayListExtra(com.example.studysync_project.ui.quiz.QuizResultActivity.EXTRA_WRONG_QUESTIONS, wrongQuestions);
+        resultIntent.putParcelableArrayListExtra(com.example.studysync_project.ui.quiz.QuizResultActivity.EXTRA_QUESTIONS, questionBundles);
+        resultIntent.putStringArrayListExtra(com.example.studysync_project.ui.quiz.QuizResultActivity.EXTRA_USER_ANSWERS, userAnswerList);
+        resultIntent.putExtra(
+                com.example.studysync_project.ui.quiz.QuizResultActivity.EXTRA_TIME_TAKEN_MINUTES,
+                Math.max(elapsedMinutes, 0)
+        );
+        startActivity(resultIntent);
+    }
+
+    private ArrayList<Bundle> buildQuestionBundlesForResult() {
+        ArrayList<Bundle> questionBundles = new ArrayList<>();
+        if (selectedQuestions == null) {
+            return questionBundles;
+        }
+
+        for (Question question : selectedQuestions) {
+            if (question == null) {
+                continue;
+            }
+
+            Bundle bundle = new Bundle();
+            bundle.putString(
+                    "question",
+                    nonEmptyOrFallback(question.getQuestionText(), getString(R.string.ar_question_text_fallback))
+            );
+            bundle.putString("optionA", nonEmptyOrFallback(question.getOptionA(), getString(R.string.ar_option_fallback)));
+            bundle.putString("optionB", nonEmptyOrFallback(question.getOptionB(), getString(R.string.ar_option_fallback)));
+            bundle.putString("optionC", nonEmptyOrFallback(question.getOptionC(), getString(R.string.ar_option_fallback)));
+            bundle.putString("optionD", nonEmptyOrFallback(question.getOptionD(), getString(R.string.ar_option_fallback)));
+            bundle.putString("correctAnswer", resolveCorrectAnswerLetter(question));
+            questionBundles.add(bundle);
+        }
+
+        return questionBundles;
+    }
+
+    private ArrayList<String> buildUserAnswersForResult() {
+        ArrayList<String> answers = new ArrayList<>();
+        if (selectedQuestions == null) {
+            return answers;
+        }
+
+        for (int i = 0; i < selectedQuestions.size(); i++) {
+            String answer = i < userAnswers.size() ? userAnswers.get(i) : null;
+            answers.add(answer != null ? answer : "");
+        }
+        return answers;
+    }
+
+    private ArrayList<String> buildWrongQuestionTextsForResult() {
+        ArrayList<String> wrongQuestions = new ArrayList<>();
+        if (selectedQuestions == null) {
+            return wrongQuestions;
+        }
+
+        for (int i = 0; i < selectedQuestions.size(); i++) {
+            Question question = selectedQuestions.get(i);
+            if (question == null) {
+                continue;
+            }
+
+            String userAnswer = i < userAnswers.size() ? userAnswers.get(i) : null;
+            String correctAnswer = resolveCorrectAnswerLetter(question);
+
+            if (userAnswer == null || userAnswer.isEmpty() || !userAnswer.equals(correctAnswer)) {
+                wrongQuestions.add(
+                        nonEmptyOrFallback(question.getQuestionText(), getString(R.string.ar_question_text_fallback))
+                );
+            }
+        }
+
+        return wrongQuestions;
     }
 
     private void requestAiInsightForCompletedQuiz() {
@@ -1122,7 +1382,9 @@ public class ArFlashcardFragment extends Fragment {
         questionSessionInitialized = false;
         noQuestionsToastShown = false;
         isGeneratingAiInsight = false;
+        quizSessionStartedAtMillis = 0L;
         userAnswers.clear();
+        clearPlacedNodes();
 
         if (binding != null) {
             binding.progressArAiInsight.setVisibility(View.GONE);
@@ -1141,9 +1403,12 @@ public class ArFlashcardFragment extends Fragment {
         currentQuestionAnswered = false;
         isQuizCompleted = false;
         isGeneratingAiInsight = false;
+        quizSessionStartedAtMillis = System.currentTimeMillis();
+        clearPlacedNodes();
         ensureUserAnswersCapacity(selectedQuestions.size());
         updateFlashcardInputFromSelectedQuestion();
         updateQuestionPanel();
+        placeCurrentQuestionCardsInFrontOfCameraIfReady();
         questionSessionInitialized = true;
     }
 
@@ -1316,6 +1581,7 @@ public class ArFlashcardFragment extends Fragment {
             binding.rbArOptionB.setText(getString(R.string.ar_option_format, "B", getString(R.string.ar_option_fallback)));
             binding.rbArOptionC.setText(getString(R.string.ar_option_format, "C", getString(R.string.ar_option_fallback)));
             binding.rbArOptionD.setText(getString(R.string.ar_option_format, "D", getString(R.string.ar_option_fallback)));
+            binding.tvArLandscapeHint.setVisibility(View.GONE);
             binding.rgArOptions.clearCheck();
             binding.btnSubmitArAnswer.setEnabled(false);
             binding.btnNextArQuestion.setEnabled(false);
@@ -1357,6 +1623,9 @@ public class ArFlashcardFragment extends Fragment {
             : getString(R.string.ar_answer_select_prompt));
         updateScoreLabel();
         updateFaceQuizCardContent();
+        updatePortraitOverflowHint();
+        maybeAutoPlaceCurrentQuestionCards();
+        applyArControlPanelState();
     }
 
     private String nonEmptyOrFallback(String value, String fallback) {
@@ -1375,6 +1644,53 @@ public class ArFlashcardFragment extends Fragment {
                 correctAnswerCount,
                 answeredQuestionCount
         ));
+    }
+
+    private void updatePortraitOverflowHint() {
+        if (binding == null) {
+            return;
+        }
+
+        boolean eligibleForLandscapeHint = !faceTrackingModeEnabled
+                && !isQuizCompleted
+                && getCurrentQuestion() != null
+                && getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
+
+        if (!eligibleForLandscapeHint) {
+            binding.tvArLandscapeHint.setVisibility(View.GONE);
+            return;
+        }
+
+        binding.cardArQuestionPanel.post(() -> {
+            if (binding == null) {
+                return;
+            }
+
+            boolean shouldShowHint = !faceTrackingModeEnabled
+                    && !isQuizCompleted
+                    && getCurrentQuestion() != null
+                    && getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT
+                    && shouldRecommendLandscapeForCurrentQuestion();
+            binding.tvArLandscapeHint.setVisibility(shouldShowHint ? View.VISIBLE : View.GONE);
+        });
+    }
+
+    private boolean shouldRecommendLandscapeForCurrentQuestion() {
+        if (binding == null) {
+            return false;
+        }
+
+        int questionLineCount = binding.tvArQuestionText.getLineCount();
+        int optionLineCount = Math.max(
+                Math.max(binding.rbArOptionA.getLineCount(), binding.rbArOptionB.getLineCount()),
+                Math.max(binding.rbArOptionC.getLineCount(), binding.rbArOptionD.getLineCount())
+        );
+
+        int panelHeight = binding.cardArQuestionPanel.getHeight();
+        int rootHeight = binding.getRoot().getHeight();
+        boolean panelTakesTooMuchSpace = rootHeight > 0 && panelHeight > (rootHeight * 0.5f);
+
+        return questionLineCount >= 5 || optionLineCount >= 3 || panelTakesTooMuchSpace;
     }
 
     private void setOptionInputsEnabled(boolean enabled) {
@@ -1537,6 +1853,7 @@ public class ArFlashcardFragment extends Fragment {
         if (selectedQuestions == null || selectedQuestions.isEmpty()) return false;
         if (selectedQuestionIndex >= selectedQuestions.size() - 1) return false;
         selectedQuestionIndex++;
+        clearPlacedNodes();
         updateFlashcardInputFromSelectedQuestion();
         currentQuestionAnswered = false;
         return true;
@@ -1591,9 +1908,13 @@ public class ArFlashcardFragment extends Fragment {
                 arSceneView.resume();
             } catch (Throwable t) {
                 Log.e(TAG, "Failed to resume AR scene", t);
+                if (handleFaceModeRuntimeFailure(t)) {
+                    return;
+                }
                 showArUnavailable(getString(R.string.ar_session_not_ready, safeMessage(t)));
             }
         }
+        maybeAutoPlaceCurrentQuestionCards();
     }
 
     @Override

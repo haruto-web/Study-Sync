@@ -72,6 +72,7 @@ public class UploadModuleActivity extends AppCompatActivity {
     private String providedModuleTitle;
     private String providedModuleSourceType;
     private String providedModuleSourceRef;
+    private boolean quizGenerationMode;
     private StudyModuleRepository studyModuleRepository;
 
     @Override
@@ -92,17 +93,9 @@ public class UploadModuleActivity extends AppCompatActivity {
         String providedSubject = getIntent().getStringExtra(EXTRA_READY_MODULE_SUBJECT);
         int providedCount = getIntent().getIntExtra(EXTRA_READY_MODULE_QUESTION_COUNT, 10);
 
-        if (providedModuleText != null && !providedModuleText.trim().isEmpty()) {
-            binding.tvFileName.setText("Ready module: " + (providedModuleTitle != null ? providedModuleTitle : "Module"));
-            binding.cardPickFile.setEnabled(false);
-            binding.cardPickFile.setAlpha(0.6f);
-            if (providedSubject != null && binding.etSubject.getText() != null) {
-                binding.etSubject.setText(providedSubject);
-            }
-            if (binding.etQuestionCount.getText() != null) {
-                binding.etQuestionCount.setText(String.valueOf(providedCount));
-            }
-        }
+        quizGenerationMode = providedModuleText != null && !providedModuleText.trim().isEmpty();
+        configureScreenForMode(providedSubject, providedCount);
+
         binding.cardPickFile.setOnClickListener(v ->
                 filePicker.launch(new String[]{"application/pdf", "text/plain",
                         "application/vnd.ms-powerpoint",
@@ -111,10 +104,86 @@ public class UploadModuleActivity extends AppCompatActivity {
         binding.btnGenerate.setOnClickListener(v -> startGeneration());
     }
 
+    private void configureScreenForMode(@Nullable String providedSubject, int providedCount) {
+        if (quizGenerationMode) {
+            binding.toolbar.setTitle("Generate Quiz");
+            binding.tvHowItWorksBody.setText("1. Review your saved module\n2. Choose number of questions\n3. AI generates your quiz");
+            binding.tvFileName.setText("Ready module: " + (providedModuleTitle != null ? providedModuleTitle : "Module"));
+            binding.cardPickFile.setEnabled(false);
+            binding.cardPickFile.setAlpha(0.6f);
+            binding.tilQuestionCount.setVisibility(View.VISIBLE);
+            binding.btnGenerate.setText("Analyze and Generate Quiz");
+
+            if (providedSubject != null && binding.etSubject.getText() != null) {
+                binding.etSubject.setText(providedSubject);
+            }
+            if (binding.etQuestionCount.getText() != null) {
+                binding.etQuestionCount.setText(String.valueOf(providedCount));
+            }
+            return;
+        }
+
+        binding.toolbar.setTitle("Upload Module");
+        binding.tvHowItWorksBody.setText("1. Upload your module (PDF, PPT, or TXT)\n2. Save it to your library\n3. Read it first\n4. Start quiz later when you are ready");
+        binding.tilQuestionCount.setVisibility(View.GONE);
+        binding.btnGenerate.setText("Save Module and Start Reading");
+    }
+
     private void startGeneration() {
-        boolean usingProvidedText = providedModuleText != null && !providedModuleText.trim().isEmpty();
-        if (!usingProvidedText && selectedFileUri == null) {
+        if (quizGenerationMode) {
+            generateQuizFromReadyModule();
+            return;
+        }
+
+        importUploadedModuleForReading();
+    }
+
+    private void importUploadedModuleForReading() {
+        if (selectedFileUri == null) {
             Toast.makeText(this, "Please select a file first", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        binding.etSubject.setError(null);
+        String subject = validateSubjectInput();
+        if (subject == null) {
+            return;
+        }
+
+        String finalSubject = subject;
+        setLoading(true, "Extracting text from file...");
+
+        java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            String text = TextExtractorUtil.extract(this, selectedFileUri);
+
+            runOnUiThread(() -> {
+                if (text == null || text.trim().isEmpty()) {
+                    setLoading(false, "");
+                    Toast.makeText(this, "Could not read file content. Try a TXT or PDF file.", Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                String moduleContent = normalizeForStorage(text);
+                String sourceName = getFileName(selectedFileUri);
+                String moduleId = upsertStudyModule(moduleContent, finalSubject, sourceName);
+                setLoading(false, "");
+
+                if (moduleId == null || moduleId.trim().isEmpty()) {
+                    Toast.makeText(this, "Could not save module right now.", Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                Toast.makeText(this, "Module saved. Read it first, then take a quiz when ready.", Toast.LENGTH_LONG).show();
+                openModuleForReading(moduleId);
+            });
+        });
+        executor.shutdown();
+    }
+
+    private void generateQuizFromReadyModule() {
+        if (providedModuleText == null || providedModuleText.trim().isEmpty()) {
+            Toast.makeText(this, "Module content is empty", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -139,49 +208,25 @@ public class UploadModuleActivity extends AppCompatActivity {
             return;
         }
 
-        int finalCount = questionCount;
-        String finalSubject = subject;
-
-        if (usingProvidedText) {
-            String moduleContent = normalizeForStorage(providedModuleText);
-            if (moduleContent.isEmpty()) {
-                Toast.makeText(this, "Module content is empty", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            String moduleTitle = resolveModuleTitle(null);
-            String moduleId = upsertStudyModule(moduleContent, finalSubject, moduleTitle);
-            extractedText = toAiPromptText(moduleContent);
-
-            setLoading(true, "AI is analyzing your module...");
-            callGemini(extractedText, finalSubject, finalCount, moduleId, moduleTitle);
+        String moduleContent = normalizeForStorage(providedModuleText);
+        if (moduleContent.isEmpty()) {
+            Toast.makeText(this, "Module content is empty", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        setLoading(true, "Extracting text from file...");
+        String moduleTitle = resolveModuleTitle(null);
+        String moduleId = upsertStudyModule(moduleContent, subject, moduleTitle);
+        extractedText = toAiPromptText(moduleContent);
 
-        java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newSingleThreadExecutor();
-        executor.execute(() -> {
-            String text = TextExtractorUtil.extract(this, selectedFileUri);
+        setLoading(true, "AI is analyzing your module...");
+        callGemini(extractedText, subject, questionCount, moduleId, moduleTitle);
+    }
 
-            runOnUiThread(() -> {
-                if (text == null || text.trim().isEmpty()) {
-                    setLoading(false, "");
-                    Toast.makeText(this, "Could not read file content. Try a TXT or PDF file.", Toast.LENGTH_LONG).show();
-                    return;
-                }
-
-                String moduleContent = normalizeForStorage(text);
-                String sourceName = getFileName(selectedFileUri);
-                String moduleTitle = resolveModuleTitle(sourceName);
-                String moduleId = upsertStudyModule(moduleContent, finalSubject, sourceName);
-                extractedText = toAiPromptText(moduleContent);
-
-                setLoading(true, "AI is analyzing your module...");
-                callGemini(extractedText, finalSubject, finalCount, moduleId, moduleTitle);
-            });
-        });
-        executor.shutdown();
+    private void openModuleForReading(String moduleId) {
+        Intent intent = new Intent(this, ModuleDetailActivity.class);
+        intent.putExtra(ModuleDetailActivity.EXTRA_MODULE_ID, moduleId);
+        startActivity(intent);
+        finish();
     }
 
     private void callGemini(
@@ -356,6 +401,7 @@ public class UploadModuleActivity extends AppCompatActivity {
                 ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
 
         if (userId == null) {
+            Toast.makeText(this, "Please sign in again to save your module.", Toast.LENGTH_LONG).show();
             return null;
         }
 
@@ -416,11 +462,11 @@ public class UploadModuleActivity extends AppCompatActivity {
         if (providedModuleSourceRef != null && !providedModuleSourceRef.trim().isEmpty()) {
             return providedModuleSourceRef.trim();
         }
-        if (fallbackRef != null && !fallbackRef.trim().isEmpty()) {
-            return fallbackRef.trim();
-        }
         if (selectedFileUri != null) {
             return selectedFileUri.toString();
+        }
+        if (fallbackRef != null && !fallbackRef.trim().isEmpty()) {
+            return fallbackRef.trim();
         }
         return "";
     }

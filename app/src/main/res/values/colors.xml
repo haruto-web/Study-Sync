@@ -44,6 +44,9 @@
     <color name="inactive">#7A747E</color>
     <color name="streak_orange">#EF6C00</color>
     <color name="streak_orange_container">#FFE0B2</color>
+    <color name="concentration_blue">#1565C0</color>
+    <color name="concentration_green">#2E7D32</color>
+    <color name="concentration_red">#C62828</color>
     
     <!-- Splash Screen -->
     <color name="splash_bg">#1A2A3A</color>

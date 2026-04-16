@@ -3,6 +3,7 @@ package com.example.studysync_project.data.repository;
 import android.content.Context;
 
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MediatorLiveData;
 
 import com.example.studysync_project.data.db.AppDatabase;
 import com.example.studysync_project.data.db.dao.TimerSessionDao;
@@ -57,6 +58,22 @@ public class TimerRepository {
         return timerSessionDao.getCompletedMinutesBetween(userId, startTime, endTime);
     }
 
+    public LiveData<Integer> getCompletedOverlapMinutesInRange(String userId, long startTime, long endTime) {
+        MediatorLiveData<Integer> result = new MediatorLiveData<>();
+        LiveData<List<TimerSession>> source =
+                timerSessionDao.getCompletedSessionsOverlappingRange(userId, startTime, endTime);
+        result.addSource(source, sessions -> result.setValue(sumOverlapMinutes(sessions, startTime, endTime)));
+        return result;
+    }
+
+    public LiveData<Integer> getOngoingOverlapMinutesInRange(String userId, long startTime, long endTime) {
+        MediatorLiveData<Integer> result = new MediatorLiveData<>();
+        LiveData<List<TimerSession>> source =
+                timerSessionDao.getOngoingSessionsOverlappingRange(userId, startTime, endTime);
+        result.addSource(source, sessions -> result.setValue(sumOverlapMinutes(sessions, startTime, endTime)));
+        return result;
+    }
+
     public LiveData<Integer> getCompletedSessionCountInRange(String userId, long startTime, long endTime) {
         return timerSessionDao.getCompletedSessionCountBetween(userId, startTime, endTime);
     }
@@ -65,7 +82,24 @@ public class TimerRepository {
         long now = System.currentTimeMillis();
         long start = StudyTimeWindow.startOfDayMillis(now);
         long end = StudyTimeWindow.endOfDayMillis(now);
-        return getCompletedStudyMinutesInRange(userId, start, end);
+
+        LiveData<Integer> completed = getCompletedOverlapMinutesInRange(userId, start, end);
+        LiveData<Integer> ongoing = getOngoingOverlapMinutesInRange(userId, start, end);
+
+        MediatorLiveData<Integer> total = new MediatorLiveData<>();
+        final int[] completedMinutes = new int[]{0};
+        final int[] ongoingMinutes = new int[]{0};
+
+        total.addSource(completed, value -> {
+            completedMinutes[0] = value != null ? value : 0;
+            total.setValue(completedMinutes[0] + ongoingMinutes[0]);
+        });
+        total.addSource(ongoing, value -> {
+            ongoingMinutes[0] = value != null ? value : 0;
+            total.setValue(completedMinutes[0] + ongoingMinutes[0]);
+        });
+
+        return total;
     }
 
     public LiveData<Integer> getTodayCompletedSessionCountForUser(String userId) {
@@ -123,5 +157,33 @@ public class TimerRepository {
 
     public void clearLocalData() {
         AppExecutors.diskIO().execute(timerSessionDao::clearAllTimerSessions);
+    }
+
+    private static int sumOverlapMinutes(List<TimerSession> sessions, long windowStart, long windowEnd) {
+        if (sessions == null || sessions.isEmpty()) {
+            return 0;
+        }
+
+        long overlapMillisTotal = 0L;
+        for (TimerSession session : sessions) {
+            if (session == null) {
+                continue;
+            }
+
+            long sessionStart = session.getStartTime();
+            long sessionEnd = session.getEndTime();
+            if (sessionEnd <= sessionStart) {
+                long fallbackEnd = sessionStart + (Math.max(0, session.getActualDurationMinutes()) * 60000L);
+                sessionEnd = Math.max(sessionStart, fallbackEnd);
+            }
+
+            long overlapStart = Math.max(sessionStart, windowStart);
+            long overlapEnd = Math.min(sessionEnd, windowEnd);
+            if (overlapEnd > overlapStart) {
+                overlapMillisTotal += (overlapEnd - overlapStart);
+            }
+        }
+
+        return (int) (overlapMillisTotal / 60000L);
     }
 }

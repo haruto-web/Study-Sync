@@ -12,6 +12,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.studysync_project.data.model.StudyModule;
 import com.example.studysync_project.databinding.ItemStudyModuleBinding;
 
+import java.util.Locale;
+
 /**
  * RecyclerView adapter for reusable study modules.
  */
@@ -43,6 +45,8 @@ public class StudyModuleAdapter extends ListAdapter<StudyModule, StudyModuleAdap
                     && TextUtils.equals(oldItem.getTopic(), newItem.getTopic())
                     && TextUtils.equals(oldItem.getContentText(), newItem.getContentText())
                     && TextUtils.equals(oldItem.getSourceType(), newItem.getSourceType())
+                    && TextUtils.equals(oldItem.getProgressionState(), newItem.getProgressionState())
+                    && oldItem.isUnlocked() == newItem.isUnlocked()
                     && oldItem.getUpdatedAt() == newItem.getUpdatedAt();
         }
     };
@@ -88,6 +92,24 @@ public class StudyModuleAdapter extends ListAdapter<StudyModule, StudyModuleAdap
 
             String sourceType = module.getSourceType() != null ? module.getSourceType() : "MODULE";
             binding.tvModuleSource.setText(formatSourceLabel(sourceType));
+            binding.tvModuleProgression.setText(formatProgressionLabel(module));
+
+            boolean unlocked = module.isUnlocked();
+            boolean isNewState = StudyModule.PROGRESSION_NEW.equalsIgnoreCase(module.getProgressionState());
+
+            binding.getRoot().setAlpha(unlocked ? 1.0f : 0.65f);
+            binding.btnReviewModule.setEnabled(unlocked);
+
+            if (!unlocked) {
+                binding.btnGenerateQuizFromModule.setEnabled(false);
+                binding.btnGenerateQuizFromModule.setText("Locked");
+            } else if (isNewState) {
+                binding.btnGenerateQuizFromModule.setEnabled(false);
+                binding.btnGenerateQuizFromModule.setText("Read First");
+            } else {
+                binding.btnGenerateQuizFromModule.setEnabled(true);
+                binding.btnGenerateQuizFromModule.setText("Generate Quiz");
+            }
 
             binding.getRoot().setOnClickListener(v -> {
                 if (listener != null) listener.onStudyModuleClick(module);
@@ -126,6 +148,25 @@ public class StudyModuleAdapter extends ListAdapter<StudyModule, StudyModuleAdap
                     return "Uploaded";
                 default:
                     return "Saved";
+            }
+        }
+
+        private String formatProgressionLabel(StudyModule module) {
+            if (module == null || !module.isUnlocked()) {
+                return "Locked";
+            }
+
+            String state = module.getProgressionState() != null
+                    ? module.getProgressionState().trim().toUpperCase(Locale.US)
+                    : StudyModule.PROGRESSION_NEW;
+
+            switch (state) {
+                case StudyModule.PROGRESSION_MASTERED:
+                    return "Mastered";
+                case StudyModule.PROGRESSION_IN_PROGRESS:
+                    return "In Progress";
+                default:
+                    return "New";
             }
         }
     }

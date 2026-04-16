@@ -38,7 +38,7 @@ import com.example.studysync_project.data.model.UserProfile;
         TimerSession.class,
         QuizAttempt.class
     },
-    version = 6,
+    version = 8,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -136,6 +136,60 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    private static final Migration MIGRATION_6_7 = new Migration(6, 7) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            if (!hasColumn(database, "study_modules", "progressionState")) {
+                database.execSQL("ALTER TABLE study_modules ADD COLUMN progressionState TEXT");
+                database.execSQL("UPDATE study_modules SET progressionState = 'NEW' WHERE progressionState IS NULL");
+            }
+            if (!hasColumn(database, "study_modules", "unlockOrder")) {
+                database.execSQL("ALTER TABLE study_modules ADD COLUMN unlockOrder INTEGER NOT NULL DEFAULT 0");
+            }
+            if (!hasColumn(database, "study_modules", "isUnlocked")) {
+                database.execSQL("ALTER TABLE study_modules ADD COLUMN isUnlocked INTEGER NOT NULL DEFAULT 1");
+            }
+            if (!hasColumn(database, "study_modules", "startedAt")) {
+                database.execSQL("ALTER TABLE study_modules ADD COLUMN startedAt INTEGER NOT NULL DEFAULT 0");
+            }
+            if (!hasColumn(database, "study_modules", "completedAt")) {
+                database.execSQL("ALTER TABLE study_modules ADD COLUMN completedAt INTEGER NOT NULL DEFAULT 0");
+            }
+            if (!hasColumn(database, "study_modules", "masteryScore")) {
+                database.execSQL("ALTER TABLE study_modules ADD COLUMN masteryScore REAL NOT NULL DEFAULT 0.0");
+            }
+            if (!hasColumn(database, "study_modules", "masteryAttempts")) {
+                database.execSQL("ALTER TABLE study_modules ADD COLUMN masteryAttempts INTEGER NOT NULL DEFAULT 0");
+            }
+
+            if (!hasColumn(database, "quizzes", "isUnlocked")) {
+                database.execSQL("ALTER TABLE quizzes ADD COLUMN isUnlocked INTEGER NOT NULL DEFAULT 1");
+            }
+            if (!hasColumn(database, "quizzes", "lastScore")) {
+                database.execSQL("ALTER TABLE quizzes ADD COLUMN lastScore REAL NOT NULL DEFAULT 0.0");
+            }
+            if (!hasColumn(database, "quizzes", "bestScore")) {
+                database.execSQL("ALTER TABLE quizzes ADD COLUMN bestScore REAL NOT NULL DEFAULT 0.0");
+            }
+            if (!hasColumn(database, "quizzes", "attemptCount")) {
+                database.execSQL("ALTER TABLE quizzes ADD COLUMN attemptCount INTEGER NOT NULL DEFAULT 0");
+            }
+            if (!hasColumn(database, "quizzes", "masteredAt")) {
+                database.execSQL("ALTER TABLE quizzes ADD COLUMN masteredAt INTEGER NOT NULL DEFAULT 0");
+            }
+        }
+    };
+
+    private static final Migration MIGRATION_7_8 = new Migration(7, 8) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            if (!hasColumn(database, "tasks", "startDate")) {
+                database.execSQL("ALTER TABLE tasks ADD COLUMN startDate INTEGER NOT NULL DEFAULT 0");
+            }
+            database.execSQL("UPDATE tasks SET startDate = CASE WHEN startDate <= 0 THEN COALESCE(createdAt, dueDate, 0) ELSE startDate END");
+        }
+    };
+
     private static boolean hasColumn(SupportSQLiteDatabase database, String tableName, String columnName) {
         Cursor cursor = null;
         try {
@@ -175,7 +229,15 @@ public abstract class AppDatabase extends RoomDatabase {
                             AppDatabase.class,
                             "studysync_database"
                         )
-                        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                        .addMigrations(
+                                MIGRATION_1_2,
+                                MIGRATION_2_3,
+                                MIGRATION_3_4,
+                                MIGRATION_4_5,
+                                MIGRATION_5_6,
+                            MIGRATION_6_7,
+                            MIGRATION_7_8
+                        )
                         .build();
                 }
             }

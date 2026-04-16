@@ -23,7 +23,7 @@
     <string name="ar_mode_title">AR Mode</string>
     <string name="ar_mode_surface">Surface</string>
     <string name="ar_mode_face">Face (Experimental)</string>
-    <string name="ar_mode_surface_active">Surface mode active: tap the camera view or use Place Card.</string>
+    <string name="ar_mode_surface_active">Surface mode active: question appears in AR first; answer using the quiz card below.</string>
     <string name="ar_mode_face_active">Face mode active: align your face and answer using the floating card.</string>
     <string name="ar_mode_face_fallback">Face mode is unavailable right now. Switched to Surface mode.</string>
     <string name="ar_mode_face_unavailable_device">Face mode is disabled on this device for camera stability.</string>
@@ -35,13 +35,14 @@
     <string name="ar_place_card">Place Card</string>
     <string name="ar_place_card_retry">Move the camera slowly and try Place Card again.</string>
     <string name="ar_clear_all">Clear all cards</string>
-    <string name="ar_instruction_compact">Scan a flat surface, then tap the view or use Place Card to place the current question card.</string>
+    <string name="ar_instruction_compact">Scan a flat surface and tap where the AR question should appear, or use Place Card. Answer using the quiz card UI below.</string>
     <string name="ar_instruction_face_mode">Face AR mode: align your face with the camera, then answer by tapping the floating buttons.</string>
     <string name="ar_surface_not_ready">Move the camera slowly until a flat surface is detected.</string>
     <string name="ar_question_progress_default">Question 0/0</string>
     <string name="ar_question_progress">Question %1$d/%2$d</string>
     <string name="ar_question_placeholder">Select a quiz to begin AR questions.</string>
     <string name="ar_answer_select_prompt">Select an option, then submit your answer.</string>
+    <string name="ar_rotate_landscape_hint">Layout is tight in portrait. Rotate to landscape for a wider AR quiz view.</string>
     <string name="ar_submit_answer">Submit</string>
     <string name="ar_next_question">Next</string>
     <string name="ar_score_default">Score: 0/0</string>
@@ -99,6 +100,14 @@
     <string name="progress_interactive_quiz_format">Attempt %1$d: %2$d%% score</string>
     <string name="progress_interactive_tasks_format">%1$s tasks: %2$d</string>
     <string name="progress_no_tasks_data">No task data yet.</string>
+    <string name="progress_avg_scope_quiz">Quiz-normalized</string>
+    <string name="progress_avg_scope_module">Module-normalized</string>
+    <string name="progress_ai_generate">Generate Insight</string>
+    <string name="progress_ai_generating">Generating insight...</string>
+    <string name="progress_ai_placeholder">Tap Generate Insight to receive a focused AI recommendation for your next study steps.</string>
+    <string name="progress_ai_missing_key">AI insight is unavailable right now (missing API key).</string>
+    <string name="progress_ai_offline">Connect to the internet to generate AI insight.</string>
+    <string name="progress_ai_failed">Could not generate AI insight right now. Please try again.</string>
 
     <string name="quiz_result_generate_module_button">Generate AI Study Module</string>
     <string name="quiz_result_generating_module">Generating module...</string>
@@ -112,19 +121,77 @@
     <string name="quiz_result_module_generation_empty">AI returned an empty module. Please try again.</string>
     <string name="quiz_result_generated_module_title">AI Personalized Module: %1$s</string>
 
-    <string name="generate_module_topic_required">Enter what you are studying or interested in.</string>
+    <string name="generate_module_topic_required">Enter a subject or topic.</string>
     <string name="generate_module_topic_too_long">Keep this field under %1$d characters.</string>
+    <string name="generate_module_title_too_long">Keep the title under %1$d characters.</string>
+    <string name="generate_module_content_required">Add module content before saving.</string>
+    <string name="generate_module_content_too_long">Keep module content under %1$d characters.</string>
+    <string name="generate_module_grade_required">Enter your grade level for AI module generation.</string>
+    <string name="generate_module_grade_too_long">Keep grade level under %1$d characters.</string>
+    <string name="generate_module_formative_required">Add a short formative assessment so AI can personalize the module.</string>
+    <string name="generate_module_formative_too_long">Keep formative assessment under %1$d characters.</string>
     <string name="generate_module_goal_too_long">Keep the learning goal under %1$d characters.</string>
-    <string name="generate_module_loading">Gemini is generating your module...</string>
+    <string name="generate_module_loading">Gemini is drafting your module...</string>
     <string name="generate_module_failed">Could not generate a module right now. Please try again.</string>
     <string name="generate_module_empty">Gemini returned an empty module. Please try again.</string>
     <string name="generate_module_saved">Module saved to your Study Library.</string>
     <string name="generate_module_user_missing">Please sign in again to save your module.</string>
+    <string name="generate_module_manual_title_format">Module: %1$s</string>
     <string name="generate_module_title_format">AI Module: %1$s</string>
+    <string name="generate_module_manual_description">Module created in-app by the learner for later review and quiz generation.</string>
     <string name="generate_module_description">AI-generated module based on your current study topic and interests.</string>
     <string name="generate_module_no_generated_content">Generate a module first.</string>
     <string name="generate_module_no_saved_module">No saved module yet.</string>
     <string name="generate_module_question_count_required">Enter the number of quiz questions.</string>
     <string name="generate_module_question_count_invalid">Question count must be a number.</string>
     <string name="generate_module_question_count_range">Question count must be between %1$d and %2$d.</string>
+
+    <string name="module_ready_prompt_title">Are you ready to take a quiz now?</string>
+    <string name="module_ready_prompt_message">Or do you want to keep reading first?</string>
+    <string name="module_ready_prompt_take_quiz">Take Quiz Now</string>
+    <string name="module_ready_prompt_keep_reading">Keep Reading</string>
+
+    <string name="pdf_viewer_unavailable">Original PDF is unavailable for this module.</string>
+    <string name="pdf_viewer_open_error">Unable to open this PDF in the app.</string>
+    <string name="pdf_viewer_permission_error">Cannot access this PDF anymore. Please upload the file again.</string>
+    <string name="pdf_viewer_page_indicator">Page %1$d of %2$d</string>
+
+    <string name="module_delete_confirm_title">Delete this module?</string>
+    <string name="module_delete_confirm_message">This will remove the module from your library.</string>
+    <string name="module_delete_confirm_action">Delete</string>
+    <string name="module_delete_unavailable">Module cannot be deleted right now.</string>
+    <string name="module_deleted">Module deleted.</string>
+
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_undo">Undo</string>
+
+    <string name="task_dialog_new_title">New Task</string>
+    <string name="task_dialog_edit_title">Edit Task</string>
+    <string name="task_validation_title_required">Title is required.</string>
+    <string name="task_validation_title_max">Keep the title under 80 characters.</string>
+    <string name="task_validation_description_max">Keep the description under 280 characters.</string>
+    <string name="task_validation_deadline_before_start">Deadline cannot be earlier than start date.</string>
+    <string name="task_delete_confirm_title">Delete this task?</string>
+    <string name="task_delete_confirm_message">This will remove \"%1$s\" from your planner.</string>
+    <string name="task_delete_confirm_message_fallback">This will remove this task from your planner.</string>
+    <string name="task_created">Task created.</string>
+    <string name="task_updated">Task updated.</string>
+    <string name="task_deleted">Task deleted.</string>
+    <string name="task_restored">Task restored.</string>
+
+    <string name="timer_not_ready">Timer is still initializing. Please wait.</string>
+    <string name="timer_no_unlocked_modules">No unlocked modules yet. Open Study and unlock a module first.</string>
+    <string name="timer_error_select_module">Select a module before starting focus timer.</string>
+    <string name="timer_helper_wait_service">Preparing timer controls...</string>
+    <string name="timer_helper_no_modules">No unlocked modules available for focus mode yet.</string>
+    <string name="timer_helper_select_module">Select a module to enable Start for focus sessions.</string>
+    <string name="timer_helper_select_module_linked_task">Select the matching module to start this linked planner task.</string>
+
+    <string name="global_timer_widget_icon_desc">Active timer</string>
+    <string name="global_timer_widget_running">Running</string>
+    <string name="global_timer_widget_paused">Paused</string>
+    <string name="global_timer_widget_show">Show timer widget</string>
+    <string name="global_timer_widget_hide">Hide timer widget</string>
 </resources>

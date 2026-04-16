@@ -1,5 +1,6 @@
 package com.example.studysync_project.ui.quiz;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Toast;
 
@@ -7,13 +8,10 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.studysync_project.data.model.Question;
 import com.example.studysync_project.data.model.Quiz;
-import com.example.studysync_project.data.model.QuizAttempt;
 import com.example.studysync_project.data.repository.QuestionRepository;
-import com.example.studysync_project.data.repository.QuizAttemptRepository;
 import com.example.studysync_project.data.repository.QuizRepository;
 import com.example.studysync_project.databinding.ActivityQuizDetailBinding;
 import com.example.studysync_project.utils.AppExecutors;
-import com.example.studysync_project.utils.IdUtil;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
@@ -36,7 +34,6 @@ public class QuizDetailActivity extends AppCompatActivity {
     private final Map<String, String> answers = new HashMap<>(); // questionId -> answer (A, B, C, D)
     private long startTime;
     private QuestionRepository questionRepository;
-    private QuizAttemptRepository quizAttemptRepository;
     private QuizRepository quizRepository;
 
     public static final String EXTRA_QUIZ_ID = "quiz_id";
@@ -64,7 +61,6 @@ public class QuizDetailActivity extends AppCompatActivity {
         }
 
         questionRepository = new QuestionRepository(this);
-        quizAttemptRepository = new QuizAttemptRepository(this);
         quizRepository = new QuizRepository(this);
 
         startTime = System.currentTimeMillis();
@@ -81,6 +77,21 @@ public class QuizDetailActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 this.quiz = loadedQuiz;
                 this.questions = loaded != null ? loaded : new ArrayList<>();
+
+                if (quiz == null) {
+                    Toast.makeText(this, "Quiz not found", Toast.LENGTH_SHORT).show();
+                    finish();
+                    return;
+                }
+
+                if (!quiz.isUnlocked()) {
+                    Toast.makeText(this,
+                            "This quiz is locked. Read the module first.",
+                            Toast.LENGTH_LONG).show();
+                    finish();
+                    return;
+                }
+
                 if (questions.isEmpty()) {
                     Toast.makeText(this, "No questions found for this quiz", Toast.LENGTH_SHORT).show();
                     finish();
@@ -158,53 +169,63 @@ public class QuizDetailActivity extends AppCompatActivity {
     private void submitQuiz() {
         saveCurrentAnswer();
 
+        if (questions == null || questions.isEmpty()) {
+            Toast.makeText(this, "No questions found for this quiz", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         // Calculate score
         int correctAnswers = 0;
+        ArrayList<Bundle> questionBundles = new ArrayList<>();
+        ArrayList<String> userAnswers = new ArrayList<>();
+        ArrayList<String> wrongQuestions = new ArrayList<>();
+
         for (Question question : questions) {
-            String userAnswer = answers.get(question.getQuestionId());
-            if (question.getCorrectAnswer().equals(userAnswer)) {
+            String correctAnswer = normalizeAnswerLetter(question.getCorrectAnswer());
+            String userAnswer = normalizeAnswerLetter(answers.get(question.getQuestionId()));
+
+            Bundle bundle = new Bundle();
+            bundle.putString("question", question.getQuestionText());
+            bundle.putString("optionA", question.getOptionA());
+            bundle.putString("optionB", question.getOptionB());
+            bundle.putString("optionC", question.getOptionC());
+            bundle.putString("optionD", question.getOptionD());
+            bundle.putString("correctAnswer", correctAnswer != null ? correctAnswer : "");
+            questionBundles.add(bundle);
+
+            userAnswers.add(userAnswer != null ? userAnswer : "");
+
+            if (correctAnswer != null && correctAnswer.equals(userAnswer)) {
                 correctAnswers++;
+            } else {
+                wrongQuestions.add(question.getQuestionText() != null ? question.getQuestionText() : "");
             }
         }
 
-        double scorePercentage = (correctAnswers * 100.0) / questions.size();
-        double passingScore = quiz != null ? quiz.getPassingScore() : 60.0;
-        boolean passed = scorePercentage >= passingScore;
-
         long timeTaken = System.currentTimeMillis() - startTime;
-        int timeTakenMinutes = (int) (timeTaken / 60000);
+        int timeTakenMinutes = (int) (timeTaken / 60000L);
 
-        // Create and save quiz attempt
-        QuizAttempt attempt = new QuizAttempt(
-            userId,
-            quizId,
-            questions.size(),
-            correctAnswers,
-            scorePercentage,
-            timeTakenMinutes
-        );
-        attempt.setAttemptId(IdUtil.generateId("attempt"));
-        attempt.setPassed(passed);
-
-        // Convert answers map to JSON string (simplified)
-        StringBuilder answersJson = new StringBuilder("{");
-        for (Map.Entry<String, String> entry : answers.entrySet()) {
-            answersJson.append("\"").append(entry.getKey()).append("\":\"").append(entry.getValue()).append("\",");
-        }
-        if (answersJson.length() > 1) {
-            answersJson.deleteCharAt(answersJson.length() - 1);
-        }
-        answersJson.append("}");
-        attempt.setAnswers(answersJson.toString());
-
-        // Save attempt
-        quizAttemptRepository.saveQuizAttempt(attempt, userId);
-
-        // Show result
-        Toast.makeText(this, "Score: " + (int)scorePercentage + "% - " + 
-                (passed ? "PASSED" : "FAILED"), Toast.LENGTH_LONG).show();
-
-        // Go back
+        Intent intent = new Intent(this, QuizResultActivity.class);
+        intent.putExtra(QuizResultActivity.EXTRA_SCORE, correctAnswers);
+        intent.putExtra(QuizResultActivity.EXTRA_TOTAL, questionBundles.size());
+        intent.putExtra(QuizResultActivity.EXTRA_SUBJECT, quiz != null ? quiz.getSubject() : null);
+        intent.putExtra(QuizResultActivity.EXTRA_QUIZ_ID, quizId);
+        intent.putStringArrayListExtra(QuizResultActivity.EXTRA_WRONG_QUESTIONS, wrongQuestions);
+        intent.putParcelableArrayListExtra(QuizResultActivity.EXTRA_QUESTIONS, questionBundles);
+        intent.putStringArrayListExtra(QuizResultActivity.EXTRA_USER_ANSWERS, userAnswers);
+        intent.putExtra(QuizResultActivity.EXTRA_TIME_TAKEN_MINUTES, Math.max(timeTakenMinutes, 0));
+        startActivity(intent);
         finish();
+    }
+
+    private static String normalizeAnswerLetter(String raw) {
+        if (raw == null) return null;
+        String value = raw.trim();
+        if (value.isEmpty()) return null;
+        char c = Character.toUpperCase(value.charAt(0));
+        if (c == 'A' || c == 'B' || c == 'C' || c == 'D') {
+            return String.valueOf(c);
+        }
+        return null;
     }
 }

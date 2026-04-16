@@ -42,11 +42,77 @@ public interface QuizAttemptDao {
     @Query("SELECT * FROM quiz_attempts WHERE userId = :userId AND quizId = :quizId ORDER BY attemptedAt DESC")
     LiveData<List<QuizAttempt>> getAttemptsForQuiz(String userId, String quizId);
 
-    @Query("SELECT AVG(scorePercentage) FROM quiz_attempts WHERE userId = :userId")
+        @Query("SELECT AVG(quiz_latest.quizScore) " +
+            "FROM (" +
+            "  SELECT qa.quizId AS quizId, AVG(qa.scorePercentage) AS quizScore " +
+            "  FROM quiz_attempts qa " +
+            "  INNER JOIN (" +
+            "    SELECT quizId, MAX(attemptedAt) AS latestAttempt " +
+            "    FROM quiz_attempts " +
+            "    WHERE userId = :userId " +
+            "    GROUP BY quizId" +
+            "  ) latest ON latest.quizId = qa.quizId AND latest.latestAttempt = qa.attemptedAt " +
+            "  WHERE qa.userId = :userId " +
+            "  GROUP BY qa.quizId" +
+            ") quiz_latest")
     LiveData<Double> getAverageScoreForUser(String userId);
 
-    @Query("SELECT AVG(scorePercentage) FROM quiz_attempts WHERE userId = :userId AND attemptedAt >= :startTime AND attemptedAt < :endTime")
+        @Query("SELECT AVG(quiz_latest.quizScore) " +
+            "FROM (" +
+            "  SELECT qa.quizId AS quizId, AVG(qa.scorePercentage) AS quizScore " +
+            "  FROM quiz_attempts qa " +
+            "  INNER JOIN (" +
+            "    SELECT quizId, MAX(attemptedAt) AS latestAttempt " +
+            "    FROM quiz_attempts " +
+            "    WHERE userId = :userId AND attemptedAt >= :startTime AND attemptedAt < :endTime " +
+            "    GROUP BY quizId" +
+            "  ) latest ON latest.quizId = qa.quizId AND latest.latestAttempt = qa.attemptedAt " +
+            "  WHERE qa.userId = :userId AND qa.attemptedAt >= :startTime AND qa.attemptedAt < :endTime " +
+            "  GROUP BY qa.quizId" +
+            ") quiz_latest")
     Double getAverageScoreBetweenSync(String userId, long startTime, long endTime);
+
+        @Query("SELECT AVG(module_scores.moduleScore) " +
+            "FROM (" +
+            "  SELECT q.moduleId AS moduleId, AVG(quiz_latest.quizScore) AS moduleScore " +
+            "  FROM quizzes q " +
+            "  INNER JOIN (" +
+            "    SELECT qa.quizId AS quizId, AVG(qa.scorePercentage) AS quizScore " +
+            "    FROM quiz_attempts qa " +
+            "    INNER JOIN (" +
+            "      SELECT quizId, MAX(attemptedAt) AS latestAttempt " +
+            "      FROM quiz_attempts " +
+            "      WHERE userId = :userId " +
+            "      GROUP BY quizId" +
+            "    ) latest ON latest.quizId = qa.quizId AND latest.latestAttempt = qa.attemptedAt " +
+            "    WHERE qa.userId = :userId " +
+            "    GROUP BY qa.quizId" +
+            "  ) quiz_latest ON quiz_latest.quizId = q.quizId " +
+            "  WHERE q.userId = :userId AND q.moduleId IS NOT NULL AND TRIM(q.moduleId) != '' " +
+            "  GROUP BY q.moduleId" +
+            ") module_scores")
+        LiveData<Double> getAverageScoreForUserByModule(String userId);
+
+        @Query("SELECT AVG(module_scores.moduleScore) " +
+            "FROM (" +
+            "  SELECT q.moduleId AS moduleId, AVG(quiz_latest.quizScore) AS moduleScore " +
+            "  FROM quizzes q " +
+            "  INNER JOIN (" +
+            "    SELECT qa.quizId AS quizId, AVG(qa.scorePercentage) AS quizScore " +
+            "    FROM quiz_attempts qa " +
+            "    INNER JOIN (" +
+            "      SELECT quizId, MAX(attemptedAt) AS latestAttempt " +
+            "      FROM quiz_attempts " +
+            "      WHERE userId = :userId AND attemptedAt >= :startTime AND attemptedAt < :endTime " +
+            "      GROUP BY quizId" +
+            "    ) latest ON latest.quizId = qa.quizId AND latest.latestAttempt = qa.attemptedAt " +
+            "    WHERE qa.userId = :userId AND qa.attemptedAt >= :startTime AND qa.attemptedAt < :endTime " +
+            "    GROUP BY qa.quizId" +
+            "  ) quiz_latest ON quiz_latest.quizId = q.quizId " +
+            "  WHERE q.userId = :userId AND q.moduleId IS NOT NULL AND TRIM(q.moduleId) != '' " +
+            "  GROUP BY q.moduleId" +
+            ") module_scores")
+        Double getAverageScoreBetweenByModuleSync(String userId, long startTime, long endTime);
 
     @Query("SELECT COUNT(*) FROM quiz_attempts WHERE userId = :userId AND attemptedAt >= :startTime AND attemptedAt < :endTime")
     int getAttemptCountBetweenSync(String userId, long startTime, long endTime);
@@ -72,14 +138,23 @@ public interface QuizAttemptDao {
     @Query("SELECT MAX(scorePercentage) FROM quiz_attempts WHERE userId = :userId AND quizId = :quizId")
     LiveData<Double> getHighestScoreForQuiz(String userId, String quizId);
 
+    @Query("SELECT MAX(scorePercentage) FROM quiz_attempts WHERE userId = :userId AND quizId = :quizId")
+    Double getHighestScoreForQuizSync(String userId, String quizId);
+
     @Query("SELECT AVG(scorePercentage) FROM quiz_attempts WHERE userId = :userId AND quizId = :quizId")
     LiveData<Double> getAverageScoreForQuiz(String userId, String quizId);
 
     @Query("SELECT COUNT(*) FROM quiz_attempts WHERE userId = :userId AND quizId = :quizId")
     LiveData<Integer> getAttemptCountForQuiz(String userId, String quizId);
 
+    @Query("SELECT COUNT(*) FROM quiz_attempts WHERE userId = :userId AND quizId = :quizId")
+    int getAttemptCountForQuizSync(String userId, String quizId);
+
     @Query("SELECT * FROM quiz_attempts WHERE userId = :userId AND quizId = :quizId ORDER BY attemptedAt DESC LIMIT 2")
     LiveData<List<QuizAttempt>> getLastTwoAttemptsForQuiz(String userId, String quizId);
+
+    @Query("SELECT * FROM quiz_attempts WHERE userId = :userId AND quizId = :quizId ORDER BY attemptedAt DESC LIMIT :limit")
+    List<QuizAttempt> getRecentAttemptsForQuizSync(String userId, String quizId, int limit);
 
     @Query("DELETE FROM quiz_attempts WHERE userId = :userId")
     void deleteAllAttemptsForUser(String userId);

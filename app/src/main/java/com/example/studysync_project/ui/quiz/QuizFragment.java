@@ -99,11 +99,14 @@ public class QuizFragment extends Fragment implements
             updateOverallEmptyState();
         });
 
-        // FAB opens upload module flow
+        // FAB opens in-app module creation first.
         binding.fabAddQuiz.setOnClickListener(v ->
-                startActivity(new Intent(requireContext(), UploadModuleActivity.class)));
+            startActivity(new Intent(requireContext(), GenerateModuleActivity.class)));
 
         binding.btnOpenGeminiModuleGenerator.setOnClickListener(v ->
+            startActivity(new Intent(requireContext(), UploadModuleActivity.class)));
+
+        binding.btnOpenAiModuleGenerator.setOnClickListener(v ->
             startActivity(new Intent(requireContext(), GenerateModuleActivity.class)));
     }
 
@@ -119,6 +122,15 @@ public class QuizFragment extends Fragment implements
             return;
         }
 
+        if (!module.isUnlocked()) {
+            Toast.makeText(
+                    requireContext(),
+                    "This module is locked. Master the previous module first.",
+                    Toast.LENGTH_LONG
+            ).show();
+            return;
+        }
+
         Intent intent = new Intent(requireContext(), ModuleDetailActivity.class);
         intent.putExtra(ModuleDetailActivity.EXTRA_MODULE_ID, module.getModuleId());
         startActivity(intent);
@@ -126,6 +138,30 @@ public class QuizFragment extends Fragment implements
 
     @Override
     public void onGenerateQuizFromModule(StudyModule module) {
+        if (module == null) {
+            Toast.makeText(requireContext(), "Module not available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!module.isUnlocked()) {
+            Toast.makeText(
+                    requireContext(),
+                    "This module is locked. Master the previous module first.",
+                    Toast.LENGTH_LONG
+            ).show();
+            return;
+        }
+
+        if (StudyModule.PROGRESSION_NEW.equalsIgnoreCase(module.getProgressionState())) {
+            Toast.makeText(
+                    requireContext(),
+                    "Open and review this module first, then generate the quiz.",
+                    Toast.LENGTH_LONG
+            ).show();
+            onStudyModuleClick(module);
+            return;
+        }
+
         if (module == null || module.getContentText() == null || module.getContentText().trim().isEmpty()) {
             Toast.makeText(requireContext(), "Module has no content to generate a quiz from", Toast.LENGTH_SHORT).show();
             return;
@@ -144,6 +180,20 @@ public class QuizFragment extends Fragment implements
 
     @Override
     public void onQuizClick(Quiz quiz) {
+        if (quiz == null) {
+            Toast.makeText(requireContext(), "Quiz not available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!quiz.isUnlocked()) {
+            Toast.makeText(
+                    requireContext(),
+                    "This quiz is locked. Read the module first.",
+                    Toast.LENGTH_LONG
+            ).show();
+            return;
+        }
+
         Intent intent = new Intent(requireContext(), QuizDetailActivity.class);
         intent.putExtra(QuizDetailActivity.EXTRA_QUIZ_ID, quiz.getQuizId());
         startActivity(intent);

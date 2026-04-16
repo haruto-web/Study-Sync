@@ -25,6 +25,7 @@ public class QuizTakeActivity extends AppCompatActivity {
     private String quizId;
     private int currentIndex = 0;
     private String[] userAnswers;
+    private long attemptStartedAt;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +41,8 @@ public class QuizTakeActivity extends AppCompatActivity {
             finish();
             return;
         }
+
+        attemptStartedAt = System.currentTimeMillis();
 
         userAnswers = new String[questions.size()];
         binding.toolbar.setTitle(subject != null ? subject + " Quiz" : "Quiz");
@@ -128,6 +131,7 @@ public class QuizTakeActivity extends AppCompatActivity {
         }
 
         Intent intent = new Intent(this, QuizResultActivity.class);
+        int timeTakenMinutes = (int) ((System.currentTimeMillis() - attemptStartedAt) / 60000L);
         intent.putExtra(QuizResultActivity.EXTRA_SCORE, correct);
         intent.putExtra(QuizResultActivity.EXTRA_TOTAL, questions.size());
         intent.putExtra(QuizResultActivity.EXTRA_SUBJECT, subject);
@@ -135,6 +139,7 @@ public class QuizTakeActivity extends AppCompatActivity {
         intent.putStringArrayListExtra(QuizResultActivity.EXTRA_WRONG_QUESTIONS, wrongQuestions);
         intent.putParcelableArrayListExtra(QuizResultActivity.EXTRA_QUESTIONS, questions);
         intent.putStringArrayListExtra(QuizResultActivity.EXTRA_USER_ANSWERS, toStringArrayList(userAnswers));
+        intent.putExtra(QuizResultActivity.EXTRA_TIME_TAKEN_MINUTES, Math.max(timeTakenMinutes, 0));
         startActivity(intent);
         finish();
     }

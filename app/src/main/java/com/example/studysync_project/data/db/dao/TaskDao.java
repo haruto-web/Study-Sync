@@ -69,6 +69,9 @@ public interface TaskDao {
     @Query("SELECT COUNT(*) FROM tasks WHERE userId = :userId AND isCompleted = 1")
     int getCompletedTaskCountForUserSync(String userId);
 
+    @Query("SELECT * FROM tasks WHERE isCompleted = 0")
+    List<Task> getAllActiveTasksSync();
+
     @Query("SELECT completedAt FROM tasks WHERE userId = :userId AND isCompleted = 1 AND completedAt >= :since")
     List<Long> getCompletedTaskTimestampsSinceSync(String userId, long since);
 

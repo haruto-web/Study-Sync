@@ -68,12 +68,18 @@ public class ProgressionRepository {
         long start7Days = now - 7L * DAY_MS;
         long start14Days = now - 14L * DAY_MS;
 
-        Double averageScore7DaysObj = quizAttemptDao.getAverageScoreBetweenSync(userId, start7Days, now + 1L);
-        Double averageScorePrev7DaysObj = quizAttemptDao.getAverageScoreBetweenSync(userId, start14Days, start7Days);
+        Double averageScore7DaysByModuleObj = quizAttemptDao.getAverageScoreBetweenByModuleSync(userId, start7Days, now + 1L);
+        Double averageScorePrev7DaysByModuleObj = quizAttemptDao.getAverageScoreBetweenByModuleSync(userId, start14Days, start7Days);
+        Double averageScore7DaysByQuizObj = quizAttemptDao.getAverageScoreBetweenSync(userId, start7Days, now + 1L);
+        Double averageScorePrev7DaysByQuizObj = quizAttemptDao.getAverageScoreBetweenSync(userId, start14Days, start7Days);
         int attempts7Days = quizAttemptDao.getAttemptCountBetweenSync(userId, start7Days, now + 1L);
 
-        double averageScore7Days = averageScore7DaysObj != null ? averageScore7DaysObj : 0.0;
-        double averageScorePrev7Days = averageScorePrev7DaysObj != null ? averageScorePrev7DaysObj : averageScore7Days;
+        double averageScore7Days = averageScore7DaysByModuleObj != null
+            ? averageScore7DaysByModuleObj
+            : (averageScore7DaysByQuizObj != null ? averageScore7DaysByQuizObj : 0.0);
+        double averageScorePrev7Days = averageScorePrev7DaysByModuleObj != null
+            ? averageScorePrev7DaysByModuleObj
+            : (averageScorePrev7DaysByQuizObj != null ? averageScorePrev7DaysByQuizObj : averageScore7Days);
 
         double quizQuality = ProgressionScoring.clamp(averageScore7Days, 0.0, 100.0);
         double quizTrendScore = ProgressionScoring.clamp(50.0 + ((averageScore7Days - averageScorePrev7Days) * 2.5), 0.0, 100.0);
@@ -240,10 +246,27 @@ public class ProgressionRepository {
             return new SubjectInsights("", "");
         }
 
+        Map<String, QuizAttempt> latestAttemptPerQuiz = new HashMap<>();
+        for (QuizAttempt attempt : attempts) {
+            if (attempt == null) {
+                continue;
+            }
+            String key = attempt.getQuizId();
+            if (key == null || key.trim().isEmpty()) {
+                key = attempt.getAttemptId();
+            }
+            if (key == null || key.trim().isEmpty()) {
+                continue;
+            }
+            if (!latestAttemptPerQuiz.containsKey(key)) {
+                latestAttemptPerQuiz.put(key, attempt);
+            }
+        }
+
         Map<String, SubjectAccumulator> buckets = new HashMap<>();
         Map<String, String> quizSubjectCache = new HashMap<>();
 
-        for (QuizAttempt attempt : attempts) {
+        for (QuizAttempt attempt : latestAttemptPerQuiz.values()) {
             String quizId = attempt.getQuizId();
             String subject = quizSubjectCache.get(quizId);
             if (subject == null) {

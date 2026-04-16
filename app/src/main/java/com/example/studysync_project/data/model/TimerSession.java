@@ -80,10 +80,12 @@ public class TimerSession {
     // Setters
     public void setSessionId(@NonNull String sessionId) { this.sessionId = sessionId; }
     public void setUserId(String userId) { this.userId = userId; }
+    public void setStartTime(long startTime) { this.startTime = startTime; }
     public void setEndTime(long endTime) { this.endTime = endTime; }
     public void setActualDurationMinutes(int actualDurationMinutes) { this.actualDurationMinutes = actualDurationMinutes; }
     public void setCompleted(boolean completed) { this.isCompleted = completed; }
     public void setPaused(boolean paused) { this.isPaused = paused; }
     public void addPausedDuration(long duration) { this.pausedDuration += duration; }
     public void setNotes(String notes) { this.notes = notes; }
+    public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
 }

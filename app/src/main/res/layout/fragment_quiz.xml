@@ -69,7 +69,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Ask Gemini"
+                            android:text="Add Learning Module"
                             android:textColor="@color/on_primary_container"
                             android:textSize="16sp"
                             android:textStyle="bold" />
@@ -78,20 +78,30 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="6dp"
-                            android:text="Generate a new study module for any topic you are currently studying or interested in, then turn it into a quiz right away or later."
+                            android:text="Choose how you want to create a module: upload your own PDF/TXT file, or ask AI to generate one for you."
                             android:textColor="@color/on_primary_container"
                             android:textSize="13sp" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_open_gemini_module_generator"
                             style="@style/Widget.StudySync.Button.Primary"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="40dp"
                             android:layout_marginTop="12dp"
-                            android:text="Generate Module with Gemini"
+                            android:text="Upload My PDF/TXT Module"
                             android:textColor="@color/on_primary"
                             android:textSize="12sp"
                             app:backgroundTint="@color/primary"
+                            app:cornerRadius="10dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_open_ai_module_generator"
+                            style="@style/Widget.StudySync.Button.Outlined"
+                            android:layout_width="match_parent"
+                            android:layout_height="40dp"
+                            android:layout_marginTop="8dp"
+                            android:text="Generate Module with AI"
+                            android:textSize="12sp"
                             app:cornerRadius="10dp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
@@ -120,7 +130,7 @@
                     android:layout_marginStart="8dp"
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="16dp"
-                    android:text="No modules yet. Upload one to start building your library."
+                    android:text="No modules yet. Tap + to add your own module first."
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp"
                     android:visibility="gone" />
@@ -193,7 +203,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Upload a module to start reviewing and generating quizzes"
+                        android:text="Tap + to create a module in-app, or upload a file above for AI quiz analysis."
                         android:textSize="14sp"
                         android:textColor="@color/text_secondary"
                         android:layout_marginTop="8dp" />
@@ -212,7 +222,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
-        android:contentDescription="Add Quiz"
+        android:contentDescription="Add Module"
         app:srcCompat="@drawable/ic_add"
         app:backgroundTint="@color/primary" />
 

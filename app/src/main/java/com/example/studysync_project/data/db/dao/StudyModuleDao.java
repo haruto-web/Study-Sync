@@ -35,8 +35,20 @@ public interface StudyModuleDao {
     @Query("SELECT * FROM study_modules WHERE moduleId = :moduleId")
     StudyModule getStudyModuleByIdSync(String moduleId);
 
-    @Query("SELECT * FROM study_modules WHERE userId = :userId AND isArchived = 0 ORDER BY createdAt DESC")
+    @Query("SELECT * FROM study_modules WHERE userId = :userId AND isArchived = 0 ORDER BY isUnlocked DESC, LOWER(COALESCE(subject, 'general')) ASC, unlockOrder ASC, createdAt DESC")
     LiveData<List<StudyModule>> getAllStudyModulesForUser(String userId);
+
+    @Query("SELECT * FROM study_modules WHERE userId = :userId AND isArchived = 0 ORDER BY LOWER(COALESCE(subject, 'general')) ASC, unlockOrder ASC, createdAt ASC")
+    List<StudyModule> getAllStudyModulesForUserSync(String userId);
+
+    @Query("SELECT MAX(unlockOrder) FROM study_modules WHERE userId = :userId AND isArchived = 0 AND LOWER(COALESCE(subject, 'general')) = LOWER(:subject)")
+    Integer getMaxUnlockOrderForSubjectSync(String userId, String subject);
+
+    @Query("SELECT * FROM study_modules WHERE userId = :userId AND isArchived = 0 AND LOWER(COALESCE(subject, 'general')) = LOWER(:subject) ORDER BY unlockOrder DESC, createdAt DESC LIMIT 1")
+    StudyModule getLatestModuleForSubjectSync(String userId, String subject);
+
+    @Query("SELECT * FROM study_modules WHERE userId = :userId AND isArchived = 0 AND isUnlocked = 0 AND LOWER(COALESCE(subject, 'general')) = LOWER(:subject) AND unlockOrder > :afterUnlockOrder ORDER BY unlockOrder ASC, createdAt ASC LIMIT 1")
+    StudyModule getNextLockedModuleForSubjectSync(String userId, String subject, int afterUnlockOrder);
 
     @Query("SELECT COUNT(*) FROM study_modules WHERE userId = :userId AND isArchived = 0")
     LiveData<Integer> getActiveStudyModuleCountForUser(String userId);

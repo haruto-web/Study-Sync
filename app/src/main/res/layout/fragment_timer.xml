@@ -203,6 +203,18 @@
                                     android:textColor="@color/text_secondary"
                                     android:textSize="13sp" />
 
+                                <TextView
+                                    android:id="@+id/tv_active_module"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="4dp"
+                                    android:maxWidth="180dp"
+                                    android:singleLine="true"
+                                    android:ellipsize="end"
+                                    android:text="Module: Not selected"
+                                    android:textColor="@color/text_secondary"
+                                    android:textSize="12sp" />
+
                             </LinearLayout>
                         </FrameLayout>
 
@@ -215,6 +227,16 @@
                             android:text="Session 1 of 4"
                             android:textColor="@color/text_secondary"
                             android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/tv_focus_progress"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
+                            android:text="100% complete"
+                            android:textColor="@color/primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
 
                         <!-- Controls -->
                         <LinearLayout
@@ -239,6 +261,7 @@
                                 style="@style/Widget.StudySync.Button.Primary"
                                 android:layout_width="130dp"
                                 android:layout_height="52dp"
+                                android:enabled="false"
                                 android:text="Start"
                                 android:textColor="@color/on_tertiary"
                                 android:textSize="17sp"
@@ -260,6 +283,54 @@
                         </LinearLayout>
 
                     </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.StudySync.TextInputLayout"
+                    android:id="@+id/til_focus_module"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:hint="Select module for focus session"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:helperText="@string/timer_helper_select_module"
+                    app:endIconMode="dropdown_menu">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/actv_focus_module"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="none"
+                        android:textSize="15sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_task_context"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:visibility="gone"
+                    app:cardBackgroundColor="@color/primary_container"
+                    app:cardCornerRadius="10dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/primary"
+                    app:strokeWidth="1dp">
+
+                    <TextView
+                        android:id="@+id/tv_focus_task_context"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingStart="12dp"
+                        android:paddingTop="10dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="10dp"
+                        android:text="From Planner: Sample Task"
+                        android:textColor="@color/on_primary_container"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
                 </com.google.android.material.card.MaterialCardView>
 
                 <!-- Subject Input -->

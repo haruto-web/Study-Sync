@@ -54,6 +54,12 @@ public interface TimerSessionDao {
     @Query("SELECT COALESCE(SUM(actualDurationMinutes), 0) FROM timer_sessions WHERE userId = :userId AND isCompleted = 1 AND startTime >= :startTime AND startTime < :endTime")
     LiveData<Integer> getCompletedMinutesBetween(String userId, long startTime, long endTime);
 
+    @Query("SELECT * FROM timer_sessions WHERE userId = :userId AND isCompleted = 1 AND endTime > :startTime AND startTime < :endTime")
+    LiveData<List<TimerSession>> getCompletedSessionsOverlappingRange(String userId, long startTime, long endTime);
+
+    @Query("SELECT * FROM timer_sessions WHERE userId = :userId AND isCompleted = 0 AND endTime > :startTime AND startTime < :endTime")
+    LiveData<List<TimerSession>> getOngoingSessionsOverlappingRange(String userId, long startTime, long endTime);
+
     @Query("SELECT SUM(actualDurationMinutes) FROM timer_sessions WHERE userId = :userId AND isCompleted = 1 AND startTime >= :startTime AND startTime < :endTime")
     Integer getCompletedMinutesBetweenSync(String userId, long startTime, long endTime);
 

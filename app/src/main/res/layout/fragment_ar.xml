@@ -192,6 +192,7 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/tv_ar_mode_title"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/ar_mode_title"
@@ -299,6 +300,16 @@
                                 android:textColor="@color/text_primary"
                                 android:textSize="14sp"
                                 android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tv_ar_landscape_hint"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/space_xs"
+                                android:text="@string/ar_rotate_landscape_hint"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp"
+                                android:visibility="gone" />
 
                             <RadioGroup
                                 android:id="@+id/rg_ar_options"
@@ -416,6 +427,7 @@
                     </com.google.android.material.card.MaterialCardView>
 
                     <LinearLayout
+                        android:id="@+id/layout_ar_surface_actions"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_sm"
